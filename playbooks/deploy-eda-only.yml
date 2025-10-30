@@ -1,0 +1,52 @@
+---
+# Deploy AAP with only Event-Driven Ansible (EDA) component
+#
+# Usage:
+#   ansible-playbook playbooks/deploy-eda-only.yml
+
+- name: Deploy EDA-Only AAP Instance
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Instance configuration
+    aap_instance_name: aap-eda
+    aap_instance_namespace: aap-eda
+    aap_instance_version: "2.6"
+
+    # Enable only EDA
+    aap_instance_enable_controller: false
+    aap_instance_enable_eda: true
+    aap_instance_enable_hub: false
+    aap_instance_enable_lightspeed: false
+
+    # Grant EDA cluster-admin for Kubernetes event sources
+    aap_instance_eda_create_rolebinding: true
+    aap_instance_eda_service_account: default
+    aap_instance_eda_cluster_role: cluster-admin
+
+    # EDA resource configuration
+    aap_instance_eda_replicas: 2
+    aap_instance_eda_resource_requirements:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+
+  tasks:
+    - name: Deploy EDA-only AAP instance
+      ansible.builtin.include_role:
+        name: rhpds.aap_multiinstance.aap_instance
+
+    - name: Display access information
+      ansible.builtin.debug:
+        msg:
+          - "EDA-only AAP deployed successfully!"
+          - "Namespace: {{ aap_instance_namespace }}"
+          - "EDA has cluster-admin access for Kubernetes event sources"
+          - ""
+          - "Get EDA route:"
+          - "  oc get route -n {{ aap_instance_namespace }}"

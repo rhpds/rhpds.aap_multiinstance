@@ -1,0 +1,41 @@
+#SPDX-License-Identifier: MIT-0
+### REQUIRED
+namespace: rhpds
+
+name: aap_multiinstance
+
+version: 1.0.0
+
+readme: README.md
+
+authors:
+- Prakhar Srivastava <psrivast@redhat.com>
+
+### OPTIONAL but strongly recommended
+description: Multi-instance Ansible Automation Platform deployment for OpenShift with configurable components
+
+license:
+- GPL-2.0-or-later
+
+license_file: ''
+
+tags:
+  - ansible
+  - automation
+  - aap
+  - openshift
+  - multiinstance
+
+dependencies:
+  kubernetes.core: ">=2.3.0"
+  ansible.controller: ">=4.0.0"
+
+repository: https://github.com/rhpds/rhpds.aap_multiinstance
+
+documentation: https://github.com/rhpds/rhpds.aap_multiinstance
+
+homepage: https://github.com/rhpds/rhpds.aap_multiinstance
+
+issues: https://github.com/rhpds/rhpds.aap_multiinstance/issues
+
+build_ignore: []

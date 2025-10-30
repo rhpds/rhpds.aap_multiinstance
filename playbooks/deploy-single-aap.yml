@@ -1,0 +1,44 @@
+---
+# Deploy a single AAP instance with Controller and EDA
+#
+# Usage:
+#   ansible-playbook playbooks/deploy-single-aap.yml
+
+- name: Deploy Single AAP Instance
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Instance configuration
+    aap_instance_name: aap
+    aap_instance_namespace: aap
+    aap_instance_version: "2.5"
+
+    # Components to enable
+    aap_instance_enable_controller: true
+    aap_instance_enable_eda: true
+    aap_instance_enable_hub: false
+    aap_instance_enable_lightspeed: false
+
+    # Optional: Set admin password (otherwise auto-generated)
+    # aap_instance_admin_password: "MySecurePassword123!"
+
+    # Optional: Inject manifest
+    # aap_instance_inject_manifest: true
+    # aap_instance_manifest:
+    #   url: "https://example.com/manifest.zip"
+
+  tasks:
+    - name: Deploy AAP instance
+      ansible.builtin.include_role:
+        name: rhpds.aap_multiinstance.aap_instance
+
+    - name: Display access information
+      ansible.builtin.debug:
+        msg:
+          - "AAP deployed successfully!"
+          - "Access your instance at: {{ aap_instance_info.controller_url }}"
+          - "Username: {{ aap_instance_info.admin_username }}"
+          - "Password: {{ aap_instance_info.admin_password }}"
+      when: aap_instance_info is defined

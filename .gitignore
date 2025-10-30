@@ -1,0 +1,12 @@
+*.pyc
+*.retry
+*.tar.gz
+__pycache__/
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.log
+/tmp/

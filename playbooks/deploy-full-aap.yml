@@ -1,0 +1,88 @@
+---
+# Deploy AAP with all components (Controller, EDA, Hub, Lightspeed)
+#
+# Usage:
+#   ansible-playbook playbooks/deploy-full-aap.yml \
+#     -e manifest_url=https://example.com/manifest.zip
+
+- name: Deploy Full AAP with All Components
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Instance configuration
+    aap_instance_name: aap-full
+    aap_instance_namespace: aap-full
+    aap_instance_version: "2.6"
+
+    # Enable all components
+    aap_instance_enable_controller: true
+    aap_instance_enable_eda: true
+    aap_instance_enable_hub: true
+    aap_instance_enable_lightspeed: true
+
+    # Manifest injection
+    aap_instance_inject_manifest: true
+    aap_instance_manifest:
+      url: "{{ manifest_url }}"
+
+    # EDA cluster rolebinding for k8s event sources
+    aap_instance_eda_create_rolebinding: true
+
+    # Hub configuration
+    aap_instance_hub_content_workers: 2
+    aap_instance_hub_api_workers: 2
+    aap_instance_hub_file_storage_size: 100Gi
+    aap_instance_hub_file_storage_access_mode: ReadWriteOnce
+
+    # Production-grade resources
+    aap_instance_controller_replicas: 2
+    aap_instance_controller_web_replicas: 2
+    aap_instance_controller_task_replicas: 2
+
+    aap_instance_controller_web_resource_requirements:
+      requests:
+        cpu: 1000m
+        memory: 4Gi
+      limits:
+        cpu: 4000m
+        memory: 8Gi
+
+    aap_instance_controller_task_resource_requirements:
+      requests:
+        cpu: 1000m
+        memory: 4Gi
+      limits:
+        cpu: 4000m
+        memory: 8Gi
+
+  tasks:
+    - name: Verify manifest URL is provided
+      ansible.builtin.assert:
+        that:
+          - manifest_url is defined
+          - manifest_url | length > 0
+        fail_msg: "Please provide manifest_url: -e manifest_url=https://..."
+        success_msg: "Manifest URL provided"
+
+    - name: Deploy full AAP instance
+      ansible.builtin.include_role:
+        name: rhpds.aap_multiinstance.aap_instance
+
+    - name: Display access information
+      ansible.builtin.debug:
+        msg:
+          - "Full AAP deployed successfully!"
+          - ""
+          - "Components deployed:"
+          - "  ✓ Automation Controller"
+          - "  ✓ Event-Driven Ansible"
+          - "  ✓ Private Automation Hub"
+          - "  ✓ Ansible Lightspeed"
+          - ""
+          - "Access information:"
+          - "  Controller URL: {{ aap_instance_info.controller_url }}"
+          - "  Username: {{ aap_instance_info.admin_username }}"
+          - "  Password: {{ aap_instance_info.admin_password }}"
+      when: aap_instance_info is defined

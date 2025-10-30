@@ -1,0 +1,83 @@
+---
+# Deploy multiple AAP instances for multi-user workshops
+# Integrates with RHSSO/htpasswd user provisioning
+#
+# Usage:
+#   ansible-playbook playbooks/deploy-multiuser-aap.yml -e num_users=5
+#
+# This will create AAP instances matching user accounts:
+#   user1 -> user1-aap namespace
+#   user2 -> user2-aap namespace
+#   ... etc
+
+- name: Deploy Multi-User AAP Instances
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Number of users (from RHSSO/htpasswd or override)
+    # When num_users > 1, automatically enables multi-user mode
+    num_users: 3  # Override with -e num_users=N
+
+    # User prefix (should match your authentication setup)
+    aap_instance_user_prefix: "user"
+
+    # Base instance settings
+    aap_instance_name: aap
+    aap_instance_namespace: aap
+    aap_instance_version: "2.6"
+
+    # Components to enable
+    aap_instance_enable_controller: true
+    aap_instance_enable_eda: true
+    aap_instance_enable_hub: false
+    aap_instance_enable_lightspeed: false
+
+    # Reduced resources for multi-user deployments
+    aap_instance_controller_web_resource_requirements:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+    aap_instance_controller_task_resource_requirements:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+    aap_instance_eda_resource_requirements:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+  tasks:
+    - name: Deploy multi-user AAP instances
+      ansible.builtin.include_role:
+        name: rhpds.aap_multiinstance.aap_instance
+
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "Multi-user AAP deployment complete!"
+          - "Total instances: {{ num_users }}"
+          - "Users: {{ aap_instance_user_prefix }}1 through {{ aap_instance_user_prefix }}{{ num_users }}"
+          - "Instance pattern: {{ aap_instance_user_prefix }}N-{{ aap_instance_name }}"
+          - "Namespace pattern: {{ aap_instance_user_prefix }}N-{{ aap_instance_namespace }}"
+          - ""
+          - "Example access:"
+          - "  oc project {{ aap_instance_user_prefix }}1-{{ aap_instance_namespace }}"
+          - "  oc get route -n {{ aap_instance_user_prefix }}1-{{ aap_instance_namespace }}"
+          - ""
+          - "Each user has their own isolated AAP instance:"
+          - "  {{ aap_instance_user_prefix }}1 -> {{ aap_instance_user_prefix }}1-{{ aap_instance_namespace }}"
+          - "  {{ aap_instance_user_prefix }}2 -> {{ aap_instance_user_prefix }}2-{{ aap_instance_namespace }}"
+          - "  ..."

@@ -1,0 +1,102 @@
+---
+# Example: AAP deployment integrated with AgnosticV/AgnosticD v2
+# This shows how to use this collection with RHDP variables
+#
+# In AgnosticV, you would typically have in common.yaml:
+#   num_users: 10
+#   common_password: "r3dh4t1!"
+#
+# This playbook automatically picks up those variables
+
+- name: Deploy AAP for RHDP Multi-User Environment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # These variables are typically set in AgnosticV common.yaml
+    # Uncomment to override for testing:
+    # num_users: 5
+    # common_password: "openshift"
+
+    # AAP configuration
+    aap_instance_name: aap
+    aap_instance_namespace: aap
+    aap_instance_version: "2.6"
+
+    # Components - customize based on workshop needs
+    aap_instance_enable_controller: true
+    aap_instance_enable_eda: true
+    aap_instance_enable_hub: false
+    aap_instance_enable_lightspeed: false
+
+    # User prefix - must match your htpasswd/RHSSO configuration
+    # Default RHDP pattern is "user1", "user2", etc.
+    aap_instance_user_prefix: "user"
+
+    # Resource tuning for multi-user deployments
+    # Reduce resources per instance to fit more users
+    aap_instance_controller_web_resource_requirements:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+    aap_instance_controller_task_resource_requirements:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+    aap_instance_eda_resource_requirements:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+  pre_tasks:
+    - name: Display RHDP environment info
+      ansible.builtin.debug:
+        msg:
+          - "RHDP Multi-User AAP Deployment"
+          - "Number of users: {{ num_users | default(1) }}"
+          - "Common password: {{ 'Set' if common_password is defined else 'Not set' }}"
+          - "User pattern: {{ aap_instance_user_prefix }}1, {{ aap_instance_user_prefix }}2, ..."
+          - "AAP version: {{ aap_instance_version }}"
+
+  tasks:
+    - name: Deploy AAP instances for all users
+      ansible.builtin.include_role:
+        name: rhpds.aap_multiinstance.aap_instance
+
+  post_tasks:
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "========================================="
+          - "AAP Multi-User Deployment Complete"
+          - "========================================="
+          - ""
+          - "Environment Details:"
+          - "  Total users: {{ num_users | default(1) }}"
+          - "  AAP instances: {{ num_users | default(1) }}"
+          - "  AAP version: {{ aap_instance_version }}"
+          - ""
+          - "User Access Pattern:"
+          - "  {{ aap_instance_user_prefix }}1 logs into OpenShift"
+          - "  {{ aap_instance_user_prefix }}1 accesses AAP in namespace: {{ aap_instance_user_prefix }}1-{{ aap_instance_namespace }}"
+          - ""
+          - "Get Routes:"
+          - "  oc get route -n {{ aap_instance_user_prefix }}1-{{ aap_instance_namespace }}"
+          - ""
+          - "Components Enabled:"
+          - "  Controller: {{ aap_instance_enable_controller }}"
+          - "  EDA: {{ aap_instance_enable_eda }}"
+          - "  Hub: {{ aap_instance_enable_hub }}"
+          - "  Lightspeed: {{ aap_instance_enable_lightspeed }}"

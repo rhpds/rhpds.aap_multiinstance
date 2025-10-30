@@ -1,0 +1,132 @@
+---
+# Deploy a single AAP instance
+# Variables expected:
+#   _instance_name: Name for this AAP instance
+#   _instance_namespace: Namespace for this instance
+
+- name: Generate admin password if not provided
+  when: aap_instance_admin_password | default('') | length == 0
+  ansible.builtin.set_fact:
+    _aap_instance_admin_password: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=' ~ aap_instance_admin_password_length) }}"
+
+- name: Use provided admin password
+  when: aap_instance_admin_password | default('') | length > 0
+  ansible.builtin.set_fact:
+    _aap_instance_admin_password: "{{ aap_instance_admin_password }}"
+
+- name: Create admin secret for AAP instance
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ _instance_name }}-admin-password"
+        namespace: "{{ _instance_namespace }}"
+      type: Opaque
+      stringData:
+        password: "{{ _aap_instance_admin_password }}"
+  no_log: "{{ aap_instance_no_log }}"
+
+- name: Deploy AAP instance
+  kubernetes.core.k8s:
+    state: present
+    template: aap_instance.yaml.j2
+  vars:
+    instance_name: "{{ _instance_name }}"
+    instance_namespace: "{{ _instance_namespace }}"
+
+- name: Wait for AAP instance to be ready
+  kubernetes.core.k8s_info:
+    api_version: aap.ansible.com/v1alpha1
+    kind: AnsibleAutomationPlatform
+    name: "{{ _instance_name }}"
+    namespace: "{{ _instance_namespace }}"
+    wait: true
+    wait_condition:
+      type: Successful
+      reason: Successful
+      status: "True"
+    wait_timeout: 1800
+  register: r_aap_instance
+
+- name: Extract instance URLs
+  ansible.builtin.set_fact:
+    _controller_url: "{{ r_aap_instance.resources[0].status.URL | default('') }}"
+    _controller_hostname: "{{ r_aap_instance.resources[0].status.URL | default('') | urlsplit('hostname') }}"
+
+- name: Inject AAP manifest (if enabled)
+  when:
+    - aap_instance_inject_manifest | bool
+    - aap_instance_enable_controller | bool
+    - _controller_url | length > 0
+  block:
+    - name: Download AAP manifest
+      ansible.builtin.get_url:
+        url: "{{ aap_instance_manifest.url }}"
+        dest: "/tmp/aap-manifest-{{ _instance_name }}.zip"
+        username: "{{ aap_instance_manifest.username | default(omit) }}"
+        password: "{{ aap_instance_manifest.password | default(omit) }}"
+      no_log: "{{ aap_instance_no_log }}"
+
+    - name: Inject manifest to Controller
+      ansible.controller.license:
+        manifest: "/tmp/aap-manifest-{{ _instance_name }}.zip"
+        controller_host: "{{ _controller_hostname }}"
+        controller_username: "{{ aap_instance_admin_username }}"
+        controller_password: "{{ _aap_instance_admin_password }}"
+        validate_certs: true
+      register: r_license
+      until: not r_license.failed
+      retries: 5
+      delay: 10
+      no_log: "{{ aap_instance_no_log }}"
+
+    - name: Clean up manifest file
+      ansible.builtin.file:
+        path: "/tmp/aap-manifest-{{ _instance_name }}.zip"
+        state: absent
+
+- name: Create EDA cluster rolebinding (if enabled)
+  when:
+    - aap_instance_enable_eda | bool
+    - aap_instance_eda_create_rolebinding | bool
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: "{{ _instance_name }}-eda-{{ aap_instance_eda_cluster_role }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: "{{ aap_instance_eda_cluster_role }}"
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ aap_instance_eda_service_account }}"
+          namespace: "{{ _instance_namespace }}"
+
+- name: Print instance access information
+  ansible.builtin.debug:
+    msg:
+      - "AAP Instance '{{ _instance_name }}' deployed successfully"
+      - "Namespace: {{ _instance_namespace }}"
+      - "Controller URL: {{ _controller_url }}"
+      - "Admin username: {{ aap_instance_admin_username }}"
+      - "Admin password: {{ _aap_instance_admin_password }}"
+      - ""
+      - "Components enabled:"
+      - "  Controller: {{ aap_instance_enable_controller }}"
+      - "  EDA: {{ aap_instance_enable_eda }}"
+      - "  Hub: {{ aap_instance_enable_hub }}"
+      - "  Lightspeed: {{ aap_instance_enable_lightspeed }}"
+
+- name: Save instance information to fact
+  ansible.builtin.set_fact:
+    aap_instance_info:
+      name: "{{ _instance_name }}"
+      namespace: "{{ _instance_namespace }}"
+      controller_url: "{{ _controller_url }}"
+      admin_username: "{{ aap_instance_admin_username }}"
+      admin_password: "{{ _aap_instance_admin_password }}"
