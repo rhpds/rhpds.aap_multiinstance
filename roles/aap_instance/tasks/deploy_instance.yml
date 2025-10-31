@@ -55,37 +55,18 @@
     _controller_url: "{{ r_aap_instance.resources[0].status.URL | default('') }}"
     _controller_hostname: "{{ r_aap_instance.resources[0].status.URL | default('') | urlsplit('hostname') }}"
 
-- name: Inject AAP manifest (if enabled)
+- name: Print manifest injection information
   when:
     - aap_instance_inject_manifest | bool
     - aap_instance_enable_controller | bool
-    - _controller_url | length > 0
-  block:
-    - name: Download AAP manifest
-      ansible.builtin.get_url:
-        url: "{{ aap_instance_manifest.url }}"
-        dest: "/tmp/aap-manifest-{{ _instance_name }}.zip"
-        username: "{{ aap_instance_manifest.username | default(omit) }}"
-        password: "{{ aap_instance_manifest.password | default(omit) }}"
-      no_log: "{{ aap_instance_no_log }}"
-
-    - name: Inject manifest to Controller
-      ansible.controller.license:
-        manifest: "/tmp/aap-manifest-{{ _instance_name }}.zip"
-        controller_host: "{{ _controller_hostname }}"
-        controller_username: "{{ aap_instance_admin_username }}"
-        controller_password: "{{ _aap_instance_admin_password }}"
-        validate_certs: true
-      register: r_license
-      until: not r_license.failed
-      retries: 5
-      delay: 10
-      no_log: "{{ aap_instance_no_log }}"
-
-    - name: Clean up manifest file
-      ansible.builtin.file:
-        path: "/tmp/aap-manifest-{{ _instance_name }}.zip"
-        state: absent
+  ansible.builtin.debug:
+    msg:
+      - "Manifest injection is enabled but requires ansible.controller collection"
+      - "To inject manifest manually:"
+      - "  1. Download manifest from {{ aap_instance_manifest.url }}"
+      - "  2. Login to Controller UI at {{ _controller_url }}"
+      - "  3. Navigate to Settings > Subscriptions"
+      - "  4. Upload the manifest file"
 
 - name: Create EDA cluster rolebinding (if enabled)
   when:
