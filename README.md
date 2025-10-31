@@ -26,16 +26,56 @@ This collection provides flexible AAP deployment on OpenShift:
 - OpenShift 4.12+
 - Cluster admin privileges
 - AAP subscription/manifest (for production use)
+- Python 3.9+
+
+### Python Dependencies
+
+Install Python dependencies:
+
+```bash
+pip3 install --user -r requirements.txt
+```
+
+Or manually:
+```bash
+pip3 install --user kubernetes openshift
+```
 
 ### Ansible Collections
 
-- `kubernetes.core >= 2.3.0`
-- `ansible.controller >= 4.0.0`
+Install required collections:
+
+```bash
+ansible-galaxy collection install -r requirements.yml
+```
+
+Or manually:
+```bash
+ansible-galaxy collection install kubernetes.core
+```
 
 ## Installation
 
+### From Git
+
 ```bash
-ansible-galaxy collection install rhpds.aap_multiinstance
+ansible-galaxy collection install git+https://github.com/rhpds/rhpds.aap_multiinstance.git
+```
+
+### From Source
+
+```bash
+# Clone the repository
+git clone https://github.com/rhpds/rhpds.aap_multiinstance.git
+cd rhpds.aap_multiinstance
+
+# Install dependencies
+pip3 install --user -r requirements.txt
+ansible-galaxy collection install -r requirements.yml
+
+# Build and install the collection
+ansible-galaxy collection build --force
+ansible-galaxy collection install rhpds-aap_multiinstance-*.tar.gz --force
 ```
 
 ## Quick Start

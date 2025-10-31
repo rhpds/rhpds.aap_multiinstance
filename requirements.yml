@@ -1,0 +1,7 @@
+---
+# Ansible collection requirements for rhpds.aap_multiinstance
+# Install with: ansible-galaxy collection install -r requirements.yml
+
+collections:
+  - name: kubernetes.core
+    version: ">=2.3.0"

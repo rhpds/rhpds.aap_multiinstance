@@ -6,11 +6,24 @@ Get AAP running on OpenShift in minutes.
 
 1. OpenShift cluster (4.12+)
 2. Cluster admin access
-3. Ansible installed locally with required collections:
+3. Python 3.9+ and Ansible installed
+
+### Install Dependencies
 
 ```bash
-ansible-galaxy collection install kubernetes.core
-ansible-galaxy collection install ansible.controller
+# Clone the collection
+git clone https://github.com/rhpds/rhpds.aap_multiinstance.git
+cd rhpds.aap_multiinstance
+
+# Install Python dependencies
+pip3 install --user -r requirements.txt
+
+# Install Ansible collections
+ansible-galaxy collection install -r requirements.yml
+
+# Build and install this collection
+ansible-galaxy collection build --force
+ansible-galaxy collection install rhpds-aap_multiinstance-*.tar.gz --force
 ```
 
 ## 5-Minute Single Instance Deployment
