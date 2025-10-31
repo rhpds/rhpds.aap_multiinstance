@@ -80,9 +80,28 @@ ansible-galaxy collection install rhpds-aap_multiinstance-*.tar.gz --force
 
 ## Quick Start
 
+### Prerequisites
+
+1. Login to your OpenShift cluster:
+```bash
+oc login https://api.your-cluster.com:6443
+```
+
+2. Verify you have cluster-admin access:
+```bash
+oc auth can-i '*' '*'
+```
+
 ### Single AAP Instance
 
-Deploy AAP 2.5 with Controller and EDA:
+Use the provided playbook:
+
+```bash
+cd rhpds.aap_multiinstance
+ansible-playbook playbooks/deploy-single-aap.yml
+```
+
+Or create your own playbook:
 
 ```yaml
 ---
@@ -105,7 +124,19 @@ Deploy AAP 2.5 with Controller and EDA:
 
 ### Multi-User Deployment (RHDP Integration)
 
-Deploy AAP instances matching user accounts from RHSSO/htpasswd:
+Use the provided playbook:
+
+```bash
+cd rhpds.aap_multiinstance
+
+# Deploy for 3 users
+ansible-playbook playbooks/deploy-multiuser-aap.yml -e num_users=3
+
+# Deploy for 10 users
+ansible-playbook playbooks/deploy-multiuser-aap.yml -e num_users=10
+```
+
+Or create your own playbook:
 
 ```yaml
 ---
