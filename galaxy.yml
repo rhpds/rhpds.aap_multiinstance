@@ -28,7 +28,6 @@ tags:
 
 dependencies:
   kubernetes.core: ">=2.3.0"
-  ansible.controller: ">=4.0.0"
 
 repository: https://github.com/rhpds/rhpds.aap_multiinstance
 
