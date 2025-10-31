@@ -1,14 +1,14 @@
 ---
 # Install AAP operator globally (once) for all namespaces
 
-- name: Create openshift-operators-redhat namespace for AAP operator
+- name: Create aap-operator namespace
   kubernetes.core.k8s:
     state: present
     definition:
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: openshift-operators-redhat
+        name: aap-operator
         labels:
           openshift.io/cluster-monitoring: "true"
 
@@ -24,7 +24,18 @@
         tokenConfig:
           accessTokenMaxAgeSeconds: "{{ aap_instance_ocp_token_lifecycle }}"
 
-- name: Create global AAP operator subscription (AllNamespaces)
+- name: Create OperatorGroup for global AAP operator (watches all namespaces)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1
+      kind: OperatorGroup
+      metadata:
+        name: aap-operator-global
+        namespace: aap-operator
+      spec: {}
+
+- name: Create global AAP operator subscription
   kubernetes.core.k8s:
     state: present
     definition:
@@ -32,7 +43,7 @@
       kind: Subscription
       metadata:
         name: "{{ aap_instance_operator_name }}"
-        namespace: openshift-operators-redhat
+        namespace: aap-operator
       spec:
         channel: "{{ aap_instance_operator_channel }}"
         installPlanApproval: "{{ 'Automatic' if aap_instance_automatic_install_plan_approval else 'Manual' }}"
@@ -44,7 +55,7 @@
   kubernetes.core.k8s_info:
     api_version: operators.coreos.com/v1alpha1
     kind: ClusterServiceVersion
-    namespace: openshift-operators-redhat
+    namespace: aap-operator
   register: r_csv_global
   until:
     - r_csv_global.resources | length > 0
@@ -58,5 +69,6 @@
     msg:
       - "AAP Operator installed globally"
       - "Install mode: AllNamespaces"
-      - "Operator namespace: openshift-operators-redhat"
+      - "Operator namespace: aap-operator"
+      - "OperatorGroup watches all namespaces"
       - "Can now create AAP instances in any namespace"
