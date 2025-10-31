@@ -126,15 +126,50 @@
   delay: 30
   loop: "{{ _aap_instance_namespaces }}"
 
+- name: Get routes for all users
+  kubernetes.core.k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    namespace: "{{ item.namespace }}"
+  register: r_routes
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Build user access information
+  ansible.builtin.set_fact:
+    _user_access_info: "{{ _user_access_info | default([]) + [{'user': item.item.user, 'namespace': item.item.namespace, 'route': (item.resources | selectattr('spec.to.name', 'search', 'controller') | list | first).spec.host if (item.resources | selectattr('spec.to.name', 'search', 'controller') | list | length > 0) else 'Not ready', 'password': _aap_user_passwords[item.item.namespace]}] }}"
+  loop: "{{ r_routes.results }}"
+  no_log: false
+
 - name: Print multi-user deployment summary
   ansible.builtin.debug:
     msg:
-      - "Multi-user AAP deployment complete"
+      - "========================================="
+      - "Multi-user AAP Deployment Complete!"
+      - "========================================="
+      - ""
       - "Total instances deployed: {{ aap_instance_num_users }}"
-      - "Users provisioned: {{ aap_instance_user_prefix }}1 through {{ aap_instance_user_prefix }}{{ aap_instance_num_users }}"
       - "AAP version: {{ aap_instance_version }}"
-      - "Components per instance:"
+      - ""
+      - "Components enabled:"
       - "  - Controller: {{ aap_instance_enable_controller }}"
       - "  - EDA: {{ aap_instance_enable_eda }}"
       - "  - Hub: {{ aap_instance_enable_hub }}"
       - "  - Lightspeed: {{ aap_instance_enable_lightspeed }}"
+      - ""
+      - "========================================="
+      - "User Access Information"
+      - "========================================="
+
+- name: Display access info for each user
+  ansible.builtin.debug:
+    msg:
+      - ""
+      - "User: {{ item.user }}"
+      - "Namespace: {{ item.namespace }}"
+      - "Controller URL: https://{{ item.route }}"
+      - "Admin Username: {{ aap_instance_admin_username }}"
+      - "Admin Password: {{ item.password }}"
+      - "---"
+  loop: "{{ _user_access_info }}"
+  loop_control:
+    label: "{{ item.user }}"
