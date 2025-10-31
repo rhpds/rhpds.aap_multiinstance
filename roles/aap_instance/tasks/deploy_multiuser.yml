@@ -74,11 +74,56 @@
   delay: 30
   loop: "{{ _aap_instance_namespaces }}"
 
-- name: Deploy AAP instance for each user
-  ansible.builtin.include_tasks: deploy_instance.yml
+- name: Generate admin passwords for all users
+  ansible.builtin.set_fact:
+    _aap_user_passwords: "{{ _aap_user_passwords | default({}) | combine({item.namespace: lookup('password', '/dev/null chars=ascii_letters,digits length=' ~ aap_instance_admin_password_length)}) }}"
+  loop: "{{ _aap_instance_namespaces }}"
+  when: aap_instance_admin_password | default('') | length == 0
+
+- name: Use provided admin password for all users
+  ansible.builtin.set_fact:
+    _aap_user_passwords: "{{ _aap_user_passwords | default({}) | combine({item.namespace: aap_instance_admin_password}) }}"
+  loop: "{{ _aap_instance_namespaces }}"
+  when: aap_instance_admin_password | default('') | length > 0
+
+- name: Create admin secrets for all users
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ item.name }}-admin-password"
+        namespace: "{{ item.namespace }}"
+      type: Opaque
+      stringData:
+        password: "{{ _aap_user_passwords[item.namespace] }}"
+  loop: "{{ _aap_instance_namespaces }}"
+  no_log: "{{ aap_instance_no_log }}"
+
+- name: Deploy AAP instances for all users (parallel)
+  kubernetes.core.k8s:
+    state: present
+    template: aap_instance.yaml.j2
   vars:
-    _instance_name: "{{ item.name }}"
-    _instance_namespace: "{{ item.namespace }}"
+    instance_name: "{{ item.name }}"
+    instance_namespace: "{{ item.namespace }}"
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Wait for all AAP instances to be ready (parallel)
+  kubernetes.core.k8s_info:
+    api_version: aap.ansible.com/v1alpha1
+    kind: AnsibleAutomationPlatform
+    name: "{{ item.name }}"
+    namespace: "{{ item.namespace }}"
+  register: r_aap_instances
+  until:
+    - r_aap_instances.resources | length > 0
+    - r_aap_instances.resources[0].status.conditions is defined
+    - r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | list | length > 0
+    - (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | first).status == "True"
+  retries: 60
+  delay: 30
   loop: "{{ _aap_instance_namespaces }}"
 
 - name: Print multi-user deployment summary
