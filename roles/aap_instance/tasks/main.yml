@@ -4,10 +4,6 @@
 - name: Validate configuration
   ansible.builtin.include_tasks: validate.yml
 
-- name: Setup AAP operator globally (multi-user mode)
-  when: aap_instance_multi_user | bool
-  ansible.builtin.include_tasks: setup_operator_global.yml
-
 - name: Setup operator and prerequisites (single instance mode)
   when: not aap_instance_multi_user | bool
   ansible.builtin.include_tasks: setup_operator.yml
