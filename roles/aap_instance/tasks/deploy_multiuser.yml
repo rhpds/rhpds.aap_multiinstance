@@ -29,52 +29,6 @@
           deployment-mode: multi-user
   loop: "{{ _aap_instance_namespaces }}"
 
-- name: Create OperatorGroup for each namespace
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: operators.coreos.com/v1
-      kind: OperatorGroup
-      metadata:
-        name: "{{ item.name }}-operatorgroup"
-        namespace: "{{ item.namespace }}"
-      spec:
-        targetNamespaces:
-          - "{{ item.namespace }}"
-  loop: "{{ _aap_instance_namespaces }}"
-
-- name: Create AAP operator subscription for each namespace
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: operators.coreos.com/v1alpha1
-      kind: Subscription
-      metadata:
-        name: "{{ aap_instance_operator_name }}"
-        namespace: "{{ item.namespace }}"
-      spec:
-        channel: "{{ aap_instance_operator_channel }}"
-        installPlanApproval: "{{ 'Automatic' if aap_instance_automatic_install_plan_approval else 'Manual' }}"
-        name: "{{ aap_instance_operator_name }}"
-        source: "{{ aap_instance_operator_catalog if not aap_instance_use_catalog_snapshot else aap_instance_catalogsource_name }}"
-        sourceNamespace: "{{ 'openshift-marketplace' if not aap_instance_use_catalog_snapshot else item.namespace }}"
-        startingCSV: "{{ aap_instance_starting_csv if aap_instance_starting_csv | length > 0 else omit }}"
-  loop: "{{ _aap_instance_namespaces }}"
-
-- name: Wait for operators to be ready
-  kubernetes.core.k8s_info:
-    api_version: operators.coreos.com/v1alpha1
-    kind: ClusterServiceVersion
-    namespace: "{{ item.namespace }}"
-  register: r_csv_multi
-  until:
-    - r_csv_multi.resources | length > 0
-    - r_csv_multi.resources[0].status.phase is defined
-    - r_csv_multi.resources[0].status.phase == "Succeeded"
-  retries: 30
-  delay: 30
-  loop: "{{ _aap_instance_namespaces }}"
-
 - name: Deploy AAP instance for each user
   ansible.builtin.include_tasks: deploy_instance.yml
   vars:
