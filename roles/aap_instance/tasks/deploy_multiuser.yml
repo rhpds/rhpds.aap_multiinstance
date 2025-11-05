@@ -74,9 +74,9 @@
   delay: 30
   loop: "{{ _aap_instance_namespaces }}"
 
-- name: Generate admin passwords for all users
+- name: Generate deterministic admin passwords for all users
   ansible.builtin.set_fact:
-    _aap_user_passwords: "{{ _aap_user_passwords | default({}) | combine({item.namespace: lookup('password', '/dev/null chars=ascii_letters,digits length=' ~ aap_instance_admin_password_length)}) }}"
+    _aap_user_passwords: "{{ _aap_user_passwords | default({}) | combine({item.namespace: ((aap_instance_password_salt ~ '-' ~ item.namespace) | hash('sha256'))[:aap_instance_admin_password_length]}) }}"
   loop: "{{ _aap_instance_namespaces }}"
   when: aap_instance_admin_password | default('') | length == 0
 

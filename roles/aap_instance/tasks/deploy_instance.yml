@@ -4,10 +4,10 @@
 #   _instance_name: Name for this AAP instance
 #   _instance_namespace: Namespace for this instance
 
-- name: Generate admin password if not provided
+- name: Generate deterministic admin password if not provided
   when: aap_instance_admin_password | default('') | length == 0
   ansible.builtin.set_fact:
-    _aap_instance_admin_password: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=' ~ aap_instance_admin_password_length) }}"
+    _aap_instance_admin_password: "{{ ((aap_instance_password_salt ~ '-' ~ _instance_namespace) | hash('sha256'))[:aap_instance_admin_password_length] }}"
 
 - name: Use provided admin password
   when: aap_instance_admin_password | default('') | length > 0

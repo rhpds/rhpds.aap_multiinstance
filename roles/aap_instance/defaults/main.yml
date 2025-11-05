@@ -64,6 +64,10 @@ aap_instance_admin_password: ""
 aap_instance_admin_password_length: 16
 aap_instance_admin_username: admin
 
+# Password salt for deterministic generation (change to regenerate all passwords)
+# Using guid ensures unique but consistent passwords across playbook runs
+aap_instance_password_salt: "{{ guid | default('aap-default-salt') }}"
+
 # ---------------------------------------------------------------
 # Automation Controller Settings
 # ---------------------------------------------------------------
