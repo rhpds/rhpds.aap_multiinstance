@@ -117,10 +117,15 @@
   when: ocp4_workload_aap_multiinstance_multi_user | bool
   agnosticd.core.agnosticd_user_info:
     msg: |
+      {{ item.user }} OpenShift Username: {{ item.user }}
+      {{ item.user }} OpenShift Password: {{ ocp4_workload_aap_multiinstance_user_password }}
       {{ item.user }} AAP Controller: https://{{ item.route }}
-      {{ item.user }} Admin Username: {{ ocp4_workload_aap_multiinstance_admin_username }}
-      {{ item.user }} Admin Password: {{ item.password }}
+      {{ item.user }} AAP Admin Username: {{ ocp4_workload_aap_multiinstance_admin_username }}
+      {{ item.user }} AAP Admin Password: {{ item.password }}
+      {{ item.user }} AAP Namespace: {{ item.namespace }}
     data:
+      "{{ item.user }}_openshift_username": "{{ item.user }}"
+      "{{ item.user }}_openshift_password": "{{ ocp4_workload_aap_multiinstance_user_password }}"
       "{{ item.user }}_aap_controller_url": "https://{{ item.route }}"
       "{{ item.user }}_aap_admin_username": "{{ ocp4_workload_aap_multiinstance_admin_username }}"
       "{{ item.user }}_aap_admin_password": "{{ item.password }}"
