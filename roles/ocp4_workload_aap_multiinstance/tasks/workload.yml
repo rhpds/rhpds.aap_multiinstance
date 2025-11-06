@@ -116,20 +116,21 @@
 - name: Output user access information (multi-user mode)
   when: ocp4_workload_aap_multiinstance_multi_user | bool
   agnosticd.core.agnosticd_user_info:
+    user: "{{ item.user }}"
     msg: |
-      {{ item.user }} OpenShift Username: {{ item.user }}
-      {{ item.user }} OpenShift Password: {{ ocp4_workload_aap_multiinstance_user_password }}
-      {{ item.user }} AAP Controller: https://{{ item.route }}
-      {{ item.user }} AAP Admin Username: {{ ocp4_workload_aap_multiinstance_admin_username }}
-      {{ item.user }} AAP Admin Password: {{ item.password }}
-      {{ item.user }} AAP Namespace: {{ item.namespace }}
+      OpenShift Username: {{ item.user }}
+      OpenShift Password: {{ ocp4_workload_aap_multiinstance_user_password }}
+      AAP Controller: https://{{ item.route }}
+      AAP Admin Username: {{ ocp4_workload_aap_multiinstance_admin_username }}
+      AAP Admin Password: {{ item.password }}
+      AAP Namespace: {{ item.namespace }}
     data:
-      "{{ item.user }}_openshift_username": "{{ item.user }}"
-      "{{ item.user }}_openshift_password": "{{ ocp4_workload_aap_multiinstance_user_password }}"
-      "{{ item.user }}_aap_controller_url": "https://{{ item.route }}"
-      "{{ item.user }}_aap_admin_username": "{{ ocp4_workload_aap_multiinstance_admin_username }}"
-      "{{ item.user }}_aap_admin_password": "{{ item.password }}"
-      "{{ item.user }}_aap_namespace": "{{ item.namespace }}"
+      openshift_username: "{{ item.user }}"
+      openshift_password: "{{ ocp4_workload_aap_multiinstance_user_password }}"
+      aap_controller_url: "https://{{ item.route }}"
+      aap_admin_username: "{{ ocp4_workload_aap_multiinstance_admin_username }}"
+      aap_admin_password: "{{ item.password }}"
+      aap_namespace: "{{ item.namespace }}"
   loop: "{{ _aap_multi_user_info }}"
   loop_control:
     label: "{{ item.user }}"
