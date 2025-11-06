@@ -1,0 +1,38 @@
+---
+# ---------------------------------------------------------------
+# AAP Multi-Instance Workload Removal
+# ---------------------------------------------------------------
+
+- name: Print removal information
+  ansible.builtin.debug:
+    msg:
+      - "Removing AAP Multi-Instance Workload"
+      - "Multi-user mode: {{ ocp4_workload_aap_multiinstance_multi_user }}"
+      - "Number of instances: {{ ocp4_workload_aap_multiinstance_num_users }}"
+
+- name: Build list of namespaces to remove (multi-user mode)
+  when: ocp4_workload_aap_multiinstance_multi_user | bool
+  ansible.builtin.set_fact:
+    _namespaces_to_remove: "{{ _namespaces_to_remove | default([]) + [ocp4_workload_aap_multiinstance_user_prefix ~ (item | string) ~ '-' ~ ocp4_workload_aap_multiinstance_namespace] }}"
+  loop: "{{ range(1, ocp4_workload_aap_multiinstance_num_users | int + 1) | list }}"
+
+- name: Remove multi-user AAP namespaces
+  when: ocp4_workload_aap_multiinstance_multi_user | bool
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ _namespaces_to_remove }}"
+
+- name: Remove single instance AAP namespace
+  when: not ocp4_workload_aap_multiinstance_multi_user | bool
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ ocp4_workload_aap_multiinstance_namespace }}"
+    state: absent
+
+- name: Print removal completion message
+  ansible.builtin.debug:
+    msg: "AAP Multi-Instance workload removed successfully"

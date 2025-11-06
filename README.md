@@ -15,11 +15,13 @@ This collection provides flexible AAP deployment on OpenShift:
 
 - Modular component selection (Controller, EDA, Hub, Lightspeed)
 - Multi-user deployments with namespace isolation
-- Automatic admin password generation
-- Optional manifest injection
+- Deterministic password generation (consistent across runs)
+- Automatic manifest injection for all instances
+- User RBAC (grant users access to their AAP namespaces)
 - Configurable resource requests/limits
 - Support for catalog snapshots
 - EDA cluster rolebinding for Kubernetes event sources
+- **AgnosticD v2 workload integration** for RHDP deployments
 
 ## Requirements
 
@@ -442,6 +444,76 @@ oc logs -n aap deployment/aap-controller-web
 - Ensure controller is fully ready before manifest injection
 - Check manifest URL is accessible
 - Verify manifest is valid for AAP version
+
+## AgnosticD v2 Integration
+
+This collection includes an AgnosticD v2 workload for RHDP deployments.
+
+### Workload Role
+
+The `ocp4_workload_aap_multiinstance` role provides AgnosticD v2 integration with:
+
+- Standard ACTION-based provisioning (`provision`/`destroy`)
+- Integration with RHDP variables (`guid`, `num_users`, `common_password`)
+- User access grants via OpenShift RBAC
+- RHDP catalog output via `agnosticd_user_info`
+
+### Usage in AgnosticV
+
+**Example workload configuration:**
+
+```yaml
+# In your AgnosticV common.yaml or workload vars
+
+# Standard RHDP variables
+guid: "{{ lookup('env', 'GUID') }}"
+num_users: 10
+common_password: openshift
+
+# Deploy AAP workload
+workloads:
+  - name: ocp4_workload_aap_multiinstance
+    vars:
+      ACTION: provision
+      ocp4_workload_aap_multiinstance_version: "2.6"
+      ocp4_workload_aap_multiinstance_enable_controller: true
+      ocp4_workload_aap_multiinstance_enable_eda: true
+      ocp4_workload_aap_multiinstance_grant_user_access: true
+      ocp4_workload_aap_multiinstance_inject_manifest: true
+      ocp4_workload_aap_multiinstance_manifest:
+        url: "https://your-manifest-url/manifest.zip"
+```
+
+**This will:**
+- Deploy 10 AAP instances (`user1-aap` through `user10-aap`)
+- Grant each user admin access to their namespace
+- Inject manifest into all controllers
+- Output user access info to RHDP catalog
+
+### User Access Output
+
+Users will see in the RHDP catalog:
+
+```
+user1 AAP Controller: https://user1-aap-controller-user1-aap.apps.cluster.example.com
+user1 Admin Username: admin
+user1 Admin Password: <deterministic-password>
+
+user2 AAP Controller: https://user2-aap-controller-user2-aap.apps.cluster.example.com
+user2 Admin Username: admin
+user2 Admin Password: <deterministic-password>
+...
+```
+
+### Workload Variables
+
+All workload variables are prefixed with `ocp4_workload_aap_multiinstance_`. See `roles/ocp4_workload_aap_multiinstance/defaults/main.yml` for full list.
+
+**Key variables:**
+- `grant_user_access` (default: `true`) - Grant users RBAC to their namespaces
+- `user_role` (default: `admin`) - OpenShift role to grant
+- `inject_manifest` (default: `false`) - Auto-inject manifest
+- `password_salt` (default: `{{ guid }}`) - Salt for password generation
 
 ## Development
 

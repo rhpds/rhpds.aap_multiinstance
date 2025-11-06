@@ -55,18 +55,14 @@
     _controller_url: "{{ r_aap_instance.resources[0].status.URL | default('') }}"
     _controller_hostname: "{{ r_aap_instance.resources[0].status.URL | default('') | urlsplit('hostname') }}"
 
-- name: Print manifest injection information
+- name: Inject manifest into AAP instance
   when:
     - aap_instance_inject_manifest | bool
     - aap_instance_enable_controller | bool
-  ansible.builtin.debug:
-    msg:
-      - "Manifest injection is enabled but requires ansible.controller collection"
-      - "To inject manifest manually:"
-      - "  1. Download manifest from {{ aap_instance_manifest.url }}"
-      - "  2. Login to Controller UI at {{ _controller_url }}"
-      - "  3. Navigate to Settings > Subscriptions"
-      - "  4. Upload the manifest file"
+  ansible.builtin.include_tasks: inject_manifest.yml
+  vars:
+    manifest_controller_url: "{{ _controller_url }}"
+    manifest_admin_password: "{{ _aap_instance_admin_password }}"
 
 - name: Create EDA cluster rolebinding (if enabled)
   when:

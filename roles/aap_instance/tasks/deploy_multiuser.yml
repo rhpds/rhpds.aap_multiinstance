@@ -173,3 +173,15 @@
   loop: "{{ _user_access_info }}"
   loop_control:
     label: "{{ item.user }}"
+
+- name: Inject manifest into all AAP instances
+  when:
+    - aap_instance_inject_manifest | bool
+    - aap_instance_enable_controller | bool
+  ansible.builtin.include_tasks: inject_manifest.yml
+  vars:
+    manifest_controller_url: "https://{{ item.route }}"
+    manifest_admin_password: "{{ item.password }}"
+  loop: "{{ _user_access_info }}"
+  loop_control:
+    label: "{{ item.user }}"

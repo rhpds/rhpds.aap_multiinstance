@@ -1,0 +1,151 @@
+---
+# ---------------------------------------------------------------
+# AgnosticD v2 Workload for AAP Multi-Instance Deployment
+# ---------------------------------------------------------------
+
+# ---------------------------------------------------------------
+# Instance Configuration
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_name: aap
+ocp4_workload_aap_multiinstance_namespace: aap
+
+# ---------------------------------------------------------------
+# Multi-User Configuration (RHDP Integration)
+# ---------------------------------------------------------------
+# Number of users - typically comes from AgnosticV/AgDv2 num_users variable
+ocp4_workload_aap_multiinstance_num_users: "{{ num_users | default(1) | int }}"
+
+# Auto-detect multi-user mode
+ocp4_workload_aap_multiinstance_multi_user: "{{ true if ocp4_workload_aap_multiinstance_num_users | int > 1 else false }}"
+
+# User prefix (matches htpasswd/RHSSO user naming)
+ocp4_workload_aap_multiinstance_user_prefix: "user"
+
+# User password from RHDP common_password
+ocp4_workload_aap_multiinstance_user_password: "{{ common_password | default('openshift') }}"
+
+# ---------------------------------------------------------------
+# AAP Version and Operator Settings
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_version: "2.5"
+ocp4_workload_aap_multiinstance_operator_channel: "stable-{{ ocp4_workload_aap_multiinstance_version }}"
+ocp4_workload_aap_multiinstance_operator_name: ansible-automation-platform-operator
+ocp4_workload_aap_multiinstance_operator_csv_nameprefix: aap-operator
+ocp4_workload_aap_multiinstance_operator_catalog: redhat-operators
+ocp4_workload_aap_multiinstance_starting_csv: ""
+ocp4_workload_aap_multiinstance_automatic_install_plan_approval: true
+
+# Catalog snapshot settings
+ocp4_workload_aap_multiinstance_use_catalog_snapshot: false
+ocp4_workload_aap_multiinstance_catalogsource_name: olm-snapshot-redhat-catalog
+ocp4_workload_aap_multiinstance_catalog_snapshot_image: quay.io/gpte-devops-automation/olm_snapshot_redhat_catalog
+ocp4_workload_aap_multiinstance_catalog_snapshot_image_tag: v4.19_2025_09_29
+
+# ---------------------------------------------------------------
+# Component Toggles
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_enable_controller: true
+ocp4_workload_aap_multiinstance_enable_eda: true
+ocp4_workload_aap_multiinstance_enable_hub: false
+ocp4_workload_aap_multiinstance_enable_lightspeed: false
+
+# ---------------------------------------------------------------
+# Authentication
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_admin_password: ""
+ocp4_workload_aap_multiinstance_admin_password_length: 16
+ocp4_workload_aap_multiinstance_admin_username: admin
+
+# Password salt for deterministic generation (uses RHDP guid)
+ocp4_workload_aap_multiinstance_password_salt: "{{ guid | default('aap-default-salt') }}"
+
+# ---------------------------------------------------------------
+# User Access (RBAC)
+# ---------------------------------------------------------------
+# Grant users admin access to their AAP namespace
+ocp4_workload_aap_multiinstance_grant_user_access: true
+ocp4_workload_aap_multiinstance_user_role: admin
+
+# ---------------------------------------------------------------
+# Resource Configuration
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_controller_replicas: 1
+ocp4_workload_aap_multiinstance_controller_task_replicas: 1
+ocp4_workload_aap_multiinstance_controller_web_replicas: 1
+
+ocp4_workload_aap_multiinstance_controller_web_resource_requirements:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+
+ocp4_workload_aap_multiinstance_controller_task_resource_requirements:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+
+ocp4_workload_aap_multiinstance_eda_replicas: 1
+ocp4_workload_aap_multiinstance_eda_resource_requirements:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+
+# ---------------------------------------------------------------
+# EDA Cluster Permissions
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_eda_create_rolebinding: false
+ocp4_workload_aap_multiinstance_eda_service_account: default
+ocp4_workload_aap_multiinstance_eda_cluster_role: cluster-admin
+
+# ---------------------------------------------------------------
+# Hub Settings
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_hub_replicas: 1
+ocp4_workload_aap_multiinstance_hub_content_workers: 2
+ocp4_workload_aap_multiinstance_hub_api_workers: 2
+ocp4_workload_aap_multiinstance_hub_file_storage_size: 100Gi
+ocp4_workload_aap_multiinstance_hub_file_storage_access_mode: ReadWriteOnce
+ocp4_workload_aap_multiinstance_hub_file_storage_class: ""
+
+ocp4_workload_aap_multiinstance_hub_resource_requirements:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+
+# ---------------------------------------------------------------
+# Manifest Injection
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_inject_manifest: false
+ocp4_workload_aap_multiinstance_manifest:
+  url: ""
+  username: ""
+  password: ""
+
+# ---------------------------------------------------------------
+# OpenShift Token Lifecycle
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_ocp_token_lifecycle: 1209600
+
+# ---------------------------------------------------------------
+# Network and Route Settings
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_route_tls_termination: Edge
+ocp4_workload_aap_multiinstance_redis_mode: standalone
+
+# ---------------------------------------------------------------
+# Additional Configuration
+# ---------------------------------------------------------------
+ocp4_workload_aap_multiinstance_extra_wait_minutes: 5
+ocp4_workload_aap_multiinstance_no_log: true
+ocp4_workload_aap_multiinstance_image_pull_policy: IfNotPresent

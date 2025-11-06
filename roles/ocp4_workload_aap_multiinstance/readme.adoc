@@ -1,0 +1,253 @@
+= ocp4_workload_aap_multiinstance
+
+== Role Overview
+
+This workload deploys one or more instances of Red Hat Ansible Automation Platform (AAP) 2.5/2.6 on OpenShift.
+
+Supports:
+
+* **Single instance** - One AAP deployment in a single namespace
+* **Multi-user mode** - Multiple isolated AAP instances for training/workshops
+* **Configurable components** - Enable/disable Controller, EDA, Hub, Lightspeed
+* **User RBAC** - Automatic user access grants for multi-user deployments
+
+== Prerequisites
+
+* OpenShift 4.12+
+* Cluster admin privileges
+* AAP subscription/manifest (for production use)
+
+== Integration with AgnosticD v2
+
+This workload integrates seamlessly with RHDP deployment patterns:
+
+* Uses `num_users` variable from AgnosticV/AgDv2 for multi-user deployments
+* Uses `guid` for deterministic password generation
+* Uses `common_password` for user passwords
+* Outputs user info via `agnosticd_user_info` module for RHDP catalog
+
+== Variables
+
+All variables are prefixed with `ocp4_workload_aap_multiinstance_`
+
+=== Core Variables
+
+[cols="3,2,5"]
+|===
+| Variable | Default | Description
+
+| name
+| `aap`
+| Instance name
+
+| namespace
+| `aap`
+| Deployment namespace
+
+| version
+| `2.5`
+| AAP version (2.5 or 2.6)
+
+| num_users
+| `{{ num_users \| default(1) }}`
+| Number of users (auto-enables multi-user mode when > 1)
+
+| user_prefix
+| `user`
+| User prefix for multi-user mode
+
+| grant_user_access
+| `true`
+| Grant users admin access to their AAP namespaces
+
+| user_role
+| `admin`
+| OpenShift role to grant users
+|===
+
+=== Component Toggles
+
+[cols="3,2,5"]
+|===
+| Variable | Default | Description
+
+| enable_controller
+| `true`
+| Enable Automation Controller
+
+| enable_eda
+| `true`
+| Enable Event-Driven Ansible
+
+| enable_hub
+| `false`
+| Enable Private Automation Hub
+
+| enable_lightspeed
+| `false`
+| Enable Ansible Lightspeed
+|===
+
+=== Authentication
+
+[cols="3,2,5"]
+|===
+| Variable | Default | Description
+
+| admin_password
+| `""`
+| Admin password (auto-generated if empty)
+
+| admin_password_length
+| `16`
+| Password length
+
+| admin_username
+| `admin`
+| Admin username
+
+| password_salt
+| `{{ guid \| default('aap-default-salt') }}`
+| Salt for deterministic password generation
+|===
+
+== Usage Examples
+
+=== Single AAP Instance
+
+[source,yaml]
+----
+- name: Deploy single AAP instance
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ACTION: provision
+  tasks:
+    - name: Deploy AAP
+      ansible.builtin.include_role:
+        name: ocp4_workload_aap_multiinstance
+----
+
+=== Multi-User Workshop (10 Students)
+
+[source,yaml]
+----
+- name: Deploy AAP for workshop
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ACTION: provision
+    num_users: 10
+    guid: workshop-abc123
+    ocp4_workload_aap_multiinstance_version: "2.6"
+  tasks:
+    - name: Deploy multi-user AAP
+      ansible.builtin.include_role:
+        name: ocp4_workload_aap_multiinstance
+----
+
+This creates:
+
+* 10 AAP instances: `user1-aap` through `user10-aap`
+* 10 namespaces: `user1-aap` through `user10-aap`
+* Each user gets admin access to their namespace
+* Deterministic passwords based on guid
+* User info output to RHDP catalog
+
+=== Remove Workload
+
+[source,yaml]
+----
+- name: Remove AAP workload
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ACTION: destroy
+    num_users: 10
+  tasks:
+    - name: Remove AAP
+      ansible.builtin.include_role:
+        name: ocp4_workload_aap_multiinstance
+----
+
+== RHDP Integration
+
+=== AgnosticV common.yaml Example
+
+[source,yaml]
+----
+num_users: 10
+guid: "{{ lookup('env', 'GUID') }}"
+common_password: openshift
+
+# Workload configuration
+workloads:
+  - name: ocp4_workload_aap_multiinstance
+    vars:
+      ocp4_workload_aap_multiinstance_version: "2.6"
+      ocp4_workload_aap_multiinstance_enable_controller: true
+      ocp4_workload_aap_multiinstance_enable_eda: true
+      ocp4_workload_aap_multiinstance_grant_user_access: true
+----
+
+=== User Info Output
+
+The workload automatically outputs user information to the RHDP catalog:
+
+**Single instance:**
+----
+AAP Controller URL: https://aap-controller-aap.apps.cluster.example.com
+Admin Username: admin
+Admin Password: abc123def456
+----
+
+**Multi-user:**
+----
+user1 AAP Controller: https://user1-aap-controller-user1-aap.apps.cluster.example.com
+user1 Admin Username: admin
+user1 Admin Password: xyz789abc123
+
+user2 AAP Controller: https://user2-aap-controller-user2-aap.apps.cluster.example.com
+user2 Admin Username: admin
+user2 Admin Password: def456ghi789
+...
+----
+
+== Architecture
+
+=== Single Instance
+
+----
+Namespace: aap
+├── AAP Operator
+├── OperatorGroup
+└── AnsibleAutomationPlatform CR
+    ├── Controller
+    ├── EDA
+    ├── Hub (optional)
+    └── Lightspeed (optional)
+----
+
+=== Multi-User Mode
+
+----
+Namespace: user1-aap
+├── AAP Operator
+├── OperatorGroup
+├── AnsibleAutomationPlatform CR
+└── RoleBinding (user1 -> admin)
+
+Namespace: user2-aap
+├── AAP Operator
+├── OperatorGroup
+├── AnsibleAutomationPlatform CR
+└── RoleBinding (user2 -> admin)
+
+... (up to num_users)
+----
+
+== Author
+
+Prakhar Srivastava (psrivast@redhat.com)
+
+Manager, Technical Marketing - Red Hat
