@@ -39,14 +39,13 @@
     msg: "openshift_base_domain could not be determined. Pass it as a variable or ensure proper cluster access."
   when: openshift_base_domain is not defined or openshift_base_domain | length == 0
 
-- name: Add Openshift repository
+- name: Add Openshift Helm repository
   kubernetes.core.helm_repository:
-    name: openshift 
-    repo_url: "{{ helm_repo_url }}" 
+    name: "{{ helm_repo_name }}"
+    repo_url: "{{ helm_repo_url }}"
 
 - name: Install RHAAP chart from openshift repo
   kubernetes.core.helm:
-    name: "{{ helm_release_name }}"
     release_name: "{{ helm_release_name }}"
     chart_ref: "{{ helm_repo_name }}/{{ helm_chart_name }}"
     chart_version: "{{ helm_chart_version }}"
