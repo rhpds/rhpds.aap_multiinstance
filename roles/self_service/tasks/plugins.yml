@@ -37,6 +37,17 @@
           - type: ConfigChange
   tags: [deploy_plugin]
 
-- name: Skip plugin-registry build in automated deployments
+- name: Start plugin-registry build from local dir (on bastion)
+  delegate_to: bastion
+  command: >
+    oc start-build plugin-registry
+    --from-dir={{ plugin_root_dir }}
+    --wait
+    -n {{ openshift_namespace }}
+  register: plugin_build_result
+  failed_when: false
+  changed_when: plugin_build_result.rc == 0
+
+- name: Show plugin build result
   debug:
-    msg: "Skipping plugin build - requires local oc access. Portal will work without custom plugins."
+    msg: "Plugin build {{ 'succeeded' if plugin_build_result.rc == 0 else 'failed (portal will work without custom plugins)' }}"
