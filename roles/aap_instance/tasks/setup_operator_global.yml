@@ -1,0 +1,74 @@
+---
+# Install AAP operator globally (once) for all namespaces
+
+- name: Create aap-operator namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: aap-operator
+        labels:
+          openshift.io/cluster-monitoring: "true"
+
+- name: Extend OCP bearer token lifecycle for AAP credentials
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: config.openshift.io/v1
+      kind: OAuth
+      metadata:
+        name: cluster
+      spec:
+        tokenConfig:
+          accessTokenMaxAgeSeconds: "{{ aap_instance_ocp_token_lifecycle }}"
+
+- name: Create OperatorGroup for global AAP operator (watches all namespaces)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1
+      kind: OperatorGroup
+      metadata:
+        name: aap-operator-global
+        namespace: aap-operator
+      spec: {}
+
+- name: Create global AAP operator subscription
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1alpha1
+      kind: Subscription
+      metadata:
+        name: "{{ aap_instance_operator_name }}"
+        namespace: aap-operator
+      spec:
+        channel: "{{ aap_instance_operator_channel }}"
+        installPlanApproval: "{{ 'Automatic' if aap_instance_automatic_install_plan_approval else 'Manual' }}"
+        name: "{{ aap_instance_operator_name }}"
+        source: "{{ aap_instance_operator_catalog }}"
+        sourceNamespace: openshift-marketplace
+
+- name: Wait for AAP operator to be ready globally
+  kubernetes.core.k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    namespace: aap-operator
+  register: r_csv_global
+  until:
+    - r_csv_global.resources | length > 0
+    - r_csv_global.resources | selectattr('metadata.name', 'search', 'aap-operator') | list | length > 0
+    - (r_csv_global.resources | selectattr('metadata.name', 'search', 'aap-operator') | list | first).status.phase == "Succeeded"
+  retries: 30
+  delay: 30
+
+- name: Display operator installation info
+  ansible.builtin.debug:
+    msg:
+      - "AAP Operator installed globally"
+      - "Install mode: AllNamespaces"
+      - "Operator namespace: aap-operator"
+      - "OperatorGroup watches all namespaces"
+      - "Can now create AAP instances in any namespace"

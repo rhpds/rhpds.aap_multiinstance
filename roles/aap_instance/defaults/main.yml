@@ -1,0 +1,170 @@
+---
+# ---------------------------------------------------------------
+# Instance Configuration
+# ---------------------------------------------------------------
+# Unique identifier for this AAP instance (used for naming)
+aap_instance_name: aap
+
+# Namespace where AAP will be deployed
+aap_instance_namespace: aap
+
+# ---------------------------------------------------------------
+# Multi-User Configuration (integrates with RHSSO/htpasswd)
+# ---------------------------------------------------------------
+# Number of users (typically set by num_users variable from AgnosticV/AgDv2)
+# When num_users > 1, automatically enables multi-user mode
+aap_instance_num_users: "{{ num_users | default(1) | int }}"
+
+# Auto-detect multi-user mode based on num_users
+aap_instance_multi_user: "{{ true if aap_instance_num_users | int > 1 else false }}"
+
+# User prefix (matches htpasswd/RHSSO user naming: user1, user2, etc.)
+aap_instance_user_prefix: "user"
+
+# User password (for AgnosticV integration)
+aap_instance_user_password: "{{ common_password | default('openshift') }}"
+
+# ---------------------------------------------------------------
+# AAP Version and Operator Settings
+# ---------------------------------------------------------------
+# AAP version: 2.5 or 2.6
+aap_instance_version: "2.5"
+
+# Operator channel (stable-2.5, stable-2.6, or custom)
+aap_instance_operator_channel: "stable-{{ aap_instance_version }}"
+
+aap_instance_operator_name: ansible-automation-platform-operator
+aap_instance_operator_csv_nameprefix: aap-operator
+aap_instance_operator_catalog: redhat-operators
+aap_instance_starting_csv: ""
+
+# Auto-approve install plans
+aap_instance_automatic_install_plan_approval: true
+
+# Use catalog snapshot for controlled deployments
+aap_instance_use_catalog_snapshot: false
+aap_instance_catalogsource_name: olm-snapshot-redhat-catalog
+aap_instance_catalog_snapshot_image: quay.io/gpte-devops-automation/olm_snapshot_redhat_catalog
+aap_instance_catalog_snapshot_image_tag: v4.19_2025_09_29
+
+# ---------------------------------------------------------------
+# Component Toggles
+# ---------------------------------------------------------------
+# Enable/disable individual AAP components
+aap_instance_enable_controller: true
+aap_instance_enable_eda: true
+aap_instance_enable_hub: false
+aap_instance_enable_lightspeed: false
+
+# ---------------------------------------------------------------
+# Authentication
+# ---------------------------------------------------------------
+# Admin password (auto-generated if not provided)
+aap_instance_admin_password: ""
+aap_instance_admin_password_length: 16
+aap_instance_admin_username: admin
+
+# Password salt for deterministic generation (change to regenerate all passwords)
+# Using guid ensures unique but consistent passwords across playbook runs
+aap_instance_password_salt: "{{ guid | default('aap-default-salt') }}"
+
+# ---------------------------------------------------------------
+# Automation Controller Settings
+# ---------------------------------------------------------------
+aap_instance_controller_replicas: 1
+aap_instance_controller_task_replicas: 1
+aap_instance_controller_web_replicas: 1
+
+# Resource requests and limits
+aap_instance_controller_web_resource_requirements:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+
+aap_instance_controller_task_resource_requirements:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+
+# ---------------------------------------------------------------
+# EDA Controller Settings
+# ---------------------------------------------------------------
+aap_instance_eda_replicas: 1
+
+# Create cluster-admin rolebinding for EDA (needed for k8s event sources)
+aap_instance_eda_create_rolebinding: false
+aap_instance_eda_service_account: default
+aap_instance_eda_cluster_role: cluster-admin
+
+aap_instance_eda_resource_requirements:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+
+# ---------------------------------------------------------------
+# Private Automation Hub Settings
+# ---------------------------------------------------------------
+aap_instance_hub_replicas: 1
+aap_instance_hub_content_workers: 2
+aap_instance_hub_api_workers: 2
+
+# Storage configuration
+aap_instance_hub_file_storage_size: 100Gi
+aap_instance_hub_file_storage_access_mode: ReadWriteOnce
+aap_instance_hub_file_storage_class: ""
+
+aap_instance_hub_resource_requirements:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+
+# ---------------------------------------------------------------
+# Manifest Injection
+# ---------------------------------------------------------------
+# Inject AAP subscription manifest
+aap_instance_inject_manifest: false
+
+# Manifest source
+aap_instance_manifest:
+  url: ""
+  username: ""
+  password: ""
+
+# ---------------------------------------------------------------
+# OpenShift Token Lifecycle
+# ---------------------------------------------------------------
+# Bearer token lifecycle for OCP credentials in AAP (2 weeks default)
+aap_instance_ocp_token_lifecycle: 1209600
+
+# ---------------------------------------------------------------
+# Network and Route Settings
+# ---------------------------------------------------------------
+# TLS termination for routes
+aap_instance_route_tls_termination: Edge
+
+# Redis mode
+aap_instance_redis_mode: standalone
+
+# ---------------------------------------------------------------
+# Additional Configuration
+# ---------------------------------------------------------------
+# Extra wait time after deployment for components to stabilize
+aap_instance_extra_wait_minutes: 5
+
+# Enable no_log for sensitive tasks
+aap_instance_no_log: true
+
+# Image pull policy
+aap_instance_image_pull_policy: IfNotPresent

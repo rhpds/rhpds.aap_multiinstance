@@ -1,0 +1,187 @@
+---
+# Deploy multiple AAP instances for multi-user scenarios
+# Integrates with RHSSO/htpasswd user provisioning
+
+- name: Build list of instance namespaces matching user accounts
+  ansible.builtin.set_fact:
+    _aap_instance_namespaces: "{{ _aap_instance_namespaces | default([]) + [{'name': aap_instance_user_prefix ~ (item | string) ~ '-' ~ aap_instance_name, 'namespace': aap_instance_user_prefix ~ (item | string) ~ '-' ~ aap_instance_namespace, 'user': aap_instance_user_prefix ~ (item | string)}] }}"
+  loop: "{{ range(1, aap_instance_num_users | int + 1) | list }}"
+
+- name: Display multi-user deployment plan
+  ansible.builtin.debug:
+    msg:
+      - "Deploying {{ aap_instance_num_users }} AAP instances for multi-user environment"
+      - "Matching users: {{ _aap_instance_namespaces | map(attribute='user') | list }}"
+      - "Instances: {{ _aap_instance_namespaces | map(attribute='name') | list }}"
+      - "Namespaces: {{ _aap_instance_namespaces | map(attribute='namespace') | list }}"
+
+- name: Create namespaces for each user instance
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}"
+        labels:
+          app: ansible-automation-platform
+          instance: "{{ item.name }}"
+          deployment-mode: multi-user
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Create OperatorGroup for each namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1
+      kind: OperatorGroup
+      metadata:
+        name: "{{ item.name }}-operatorgroup"
+        namespace: "{{ item.namespace }}"
+      spec:
+        targetNamespaces:
+          - "{{ item.namespace }}"
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Create AAP operator subscription for each namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1alpha1
+      kind: Subscription
+      metadata:
+        name: "{{ aap_instance_operator_name }}"
+        namespace: "{{ item.namespace }}"
+      spec:
+        channel: "{{ aap_instance_operator_channel }}"
+        installPlanApproval: "{{ 'Automatic' if aap_instance_automatic_install_plan_approval else 'Manual' }}"
+        name: "{{ aap_instance_operator_name }}"
+        source: "{{ aap_instance_operator_catalog }}"
+        sourceNamespace: openshift-marketplace
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Wait for operators to be ready in all namespaces
+  kubernetes.core.k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    namespace: "{{ item.namespace }}"
+  register: r_csv_multi
+  until:
+    - r_csv_multi.resources | length > 0
+    - r_csv_multi.resources[0].status.phase is defined
+    - r_csv_multi.resources[0].status.phase == "Succeeded"
+  retries: 30
+  delay: 30
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Generate deterministic admin passwords for all users
+  ansible.builtin.set_fact:
+    _aap_user_passwords: "{{ _aap_user_passwords | default({}) | combine({item.namespace: ((aap_instance_password_salt ~ '-' ~ item.namespace) | hash('sha256'))[:aap_instance_admin_password_length]}) }}"
+  loop: "{{ _aap_instance_namespaces }}"
+  when: aap_instance_admin_password | default('') | length == 0
+
+- name: Use provided admin password for all users
+  ansible.builtin.set_fact:
+    _aap_user_passwords: "{{ _aap_user_passwords | default({}) | combine({item.namespace: aap_instance_admin_password}) }}"
+  loop: "{{ _aap_instance_namespaces }}"
+  when: aap_instance_admin_password | default('') | length > 0
+
+- name: Create admin secrets for all users
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ item.name }}-admin-password"
+        namespace: "{{ item.namespace }}"
+      type: Opaque
+      stringData:
+        password: "{{ _aap_user_passwords[item.namespace] }}"
+  loop: "{{ _aap_instance_namespaces }}"
+  no_log: "{{ aap_instance_no_log }}"
+
+- name: Deploy AAP instances for all users (parallel)
+  kubernetes.core.k8s:
+    state: present
+    template: aap_instance.yaml.j2
+  vars:
+    instance_name: "{{ item.name }}"
+    instance_namespace: "{{ item.namespace }}"
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Wait for all AAP instances to be ready (parallel)
+  kubernetes.core.k8s_info:
+    api_version: aap.ansible.com/v1alpha1
+    kind: AnsibleAutomationPlatform
+    name: "{{ item.name }}"
+    namespace: "{{ item.namespace }}"
+  register: r_aap_instances
+  until:
+    - r_aap_instances.resources | length > 0
+    - r_aap_instances.resources[0].status.conditions is defined
+    - r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | list | length > 0
+    - (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | first).status == "True"
+  retries: 60
+  delay: 30
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Get routes for all users
+  kubernetes.core.k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    namespace: "{{ item.namespace }}"
+  register: r_routes
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Build user access information
+  ansible.builtin.set_fact:
+    _user_access_info: "{{ _user_access_info | default([]) + [{'user': item.item.user, 'namespace': item.item.namespace, 'route': (item.resources | selectattr('spec.to.name', 'search', 'controller') | list | first).spec.host if (item.resources | selectattr('spec.to.name', 'search', 'controller') | list | length > 0) else 'Not ready', 'password': _aap_user_passwords[item.item.namespace]}] }}"
+  loop: "{{ r_routes.results }}"
+  no_log: false
+
+- name: Print multi-user deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "========================================="
+      - "Multi-user AAP Deployment Complete!"
+      - "========================================="
+      - ""
+      - "Total instances deployed: {{ aap_instance_num_users }}"
+      - "AAP version: {{ aap_instance_version }}"
+      - ""
+      - "Components enabled:"
+      - "  - Controller: {{ aap_instance_enable_controller }}"
+      - "  - EDA: {{ aap_instance_enable_eda }}"
+      - "  - Hub: {{ aap_instance_enable_hub }}"
+      - "  - Lightspeed: {{ aap_instance_enable_lightspeed }}"
+      - ""
+      - "========================================="
+      - "User Access Information"
+      - "========================================="
+
+- name: Display access info for each user
+  ansible.builtin.debug:
+    msg:
+      - ""
+      - "User: {{ item.user }}"
+      - "Namespace: {{ item.namespace }}"
+      - "Controller URL: https://{{ item.route }}"
+      - "Admin Username: {{ aap_instance_admin_username }}"
+      - "Admin Password: {{ item.password }}"
+      - "---"
+  loop: "{{ _user_access_info }}"
+  loop_control:
+    label: "{{ item.user }}"
+
+- name: Inject manifest into all AAP instances
+  when:
+    - aap_instance_inject_manifest | bool
+    - aap_instance_enable_controller | bool
+  ansible.builtin.include_tasks: inject_manifest.yml
+  vars:
+    manifest_controller_url: "https://{{ item.route }}"
+    manifest_admin_password: "{{ item.password }}"
+  loop: "{{ _user_access_info }}"
+  loop_control:
+    label: "{{ item.user }}"

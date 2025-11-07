@@ -1,0 +1,20 @@
+---
+# Main entry point for AAP instance deployment
+
+- name: Validate configuration
+  ansible.builtin.include_tasks: validate.yml
+
+- name: Setup operator and prerequisites (single instance mode)
+  when: not aap_instance_multi_user | bool
+  ansible.builtin.include_tasks: setup_operator.yml
+
+- name: Deploy single AAP instance
+  when: not aap_instance_multi_user | bool
+  ansible.builtin.include_tasks: deploy_instance.yml
+  vars:
+    _instance_name: "{{ aap_instance_name }}"
+    _instance_namespace: "{{ aap_instance_namespace }}"
+
+- name: Deploy multiple AAP instances for multi-user
+  when: aap_instance_multi_user | bool
+  ansible.builtin.include_tasks: deploy_multiuser.yml
