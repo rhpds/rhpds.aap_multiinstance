@@ -4,7 +4,7 @@
 
 ```bash
 # Navigate to the collection directory
-cd /Users/psrivast/work/code/rhpds.aap_multiinstance
+cd /Users/psrivast/work/code/rhpds.aap_self_service_portal
 
 # Initialize git repository
 git init
@@ -16,7 +16,7 @@ git add .
 git commit -m "Initial commit: AAP multi-instance collection with RHDP integration"
 
 # Add remote using SSH
-git remote add origin git@github.com:rhpds/rhpds.aap_multiinstance.git
+git remote add origin git@github.com:rhpds/rhpds.aap_self_service_portal.git
 
 # Create main branch and push
 git branch -M main
@@ -41,7 +41,7 @@ If the repository doesn't exist yet, create it on GitHub:
 
 1. Go to https://github.com/rhpds
 2. Click "New repository"
-3. Name: `rhpds.aap_multiinstance`
+3. Name: `rhpds.aap_self_service_portal`
 4. Description: "Multi-instance Ansible Automation Platform deployment for OpenShift"
 5. Keep it **Public** (or Private if needed)
 6. **Do NOT** initialize with README, .gitignore, or license (we already have these)
@@ -54,10 +54,10 @@ Then run the commands above.
 If you already created the repo on GitHub:
 
 ```bash
-cd /Users/psrivast/work/code/rhpds.aap_multiinstance
+cd /Users/psrivast/work/code/rhpds.aap_self_service_portal
 
 # Clone the empty repo (this creates the .git directory)
-git clone git@github.com:rhpds/rhpds.aap_multiinstance.git temp_clone
+git clone git@github.com:rhpds/rhpds.aap_self_service_portal.git temp_clone
 mv temp_clone/.git .
 rm -rf temp_clone
 
@@ -124,5 +124,5 @@ git remote -v
 git remote remove origin
 
 # Add SSH remote
-git remote add origin git@github.com:rhpds/rhpds.aap_multiinstance.git
+git remote add origin git@github.com:rhpds/rhpds.aap_self_service_portal.git
 ```

@@ -22,12 +22,12 @@ echo ""
 
 # Run with podman
 podman run --rm -it \
-  -v ${SCRIPT_DIR}:/runner/rhpds.aap_multiinstance:Z \
+  -v ${SCRIPT_DIR}:/runner/rhpds.aap_self_service_portal:Z \
   -v ~/.kube:/home/runner/.kube:Z \
   -e KUBECONFIG=/home/runner/.kube/config \
   -e ANSIBLE_COLLECTIONS_PATH=/runner \
   quay.io/agnosticd/ee-multicloud-custom:andrew.0.1 \
-  ansible-playbook /runner/rhpds.aap_multiinstance/playbooks/deploy-multiuser-aap.yml \
+  ansible-playbook /runner/rhpds.aap_self_service_portal/playbooks/deploy-multiuser-aap.yml \
   -e num_users=${NUM_USERS} \
   -v
 

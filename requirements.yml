@@ -1,5 +1,5 @@
 ---
-# Ansible collection requirements for rhpds.aap_multiinstance
+# Ansible collection requirements for rhpds.aap_self_service_portal
 # Install with: ansible-galaxy collection install -r requirements.yml
 
 collections:

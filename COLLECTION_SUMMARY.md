@@ -1,4 +1,4 @@
-# rhpds.aap_multiinstance Collection Summary
+# rhpds.aap_self_service_portal Collection Summary
 
 ## Overview
 
@@ -11,7 +11,7 @@ New Ansible collection for deploying AAP 2.5/2.6 on OpenShift with:
 ## Collection Structure
 
 ```
-rhpds.aap_multiinstance/
+rhpds.aap_self_service_portal/
 ├── galaxy.yml                          # Collection metadata
 ├── README.md                           # Full documentation
 ├── QUICKSTART.md                       # Quick start guide
@@ -101,7 +101,7 @@ Each user gets:
 ```yaml
 - name: Deploy AAP
   ansible.builtin.include_role:
-    name: rhpds.aap_multiinstance.aap_instance
+    name: rhpds.aap_self_service_portal.aap_instance
   vars:
     aap_instance_version: "2.6"
     aap_instance_enable_controller: true
@@ -115,7 +115,7 @@ Each user gets:
 
 - name: Deploy AAP for all users
   ansible.builtin.include_role:
-    name: rhpds.aap_multiinstance.aap_instance
+    name: rhpds.aap_self_service_portal.aap_instance
   vars:
     # num_users inherited from AgnosticV
     aap_instance_version: "2.6"
@@ -128,7 +128,7 @@ Each user gets:
 # EDA only for event-driven workflows
 - name: Deploy EDA
   ansible.builtin.include_role:
-    name: rhpds.aap_multiinstance.aap_instance
+    name: rhpds.aap_self_service_portal.aap_instance
   vars:
     aap_instance_enable_controller: false
     aap_instance_enable_eda: true
@@ -230,7 +230,7 @@ AAP version: 2.6
 - All components or selective disable
 - No multi-user support
 
-### This Collection (`rhpds.aap_multiinstance`)
+### This Collection (`rhpds.aap_self_service_portal`)
 - Single OR multi-user mode
 - RHDP integration via `num_users`
 - Dynamic namespace creation
@@ -276,11 +276,11 @@ user2:password  →  user2-aap namespace
 
 3. **Publish to Git**
    ```bash
-   cd rhpds.aap_multiinstance
+   cd rhpds.aap_self_service_portal
    git init
    git add .
    git commit -m "Initial commit: AAP multi-instance collection"
-   git remote add origin https://github.com/rhpds/rhpds.aap_multiinstance.git
+   git remote add origin https://github.com/rhpds/rhpds.aap_self_service_portal.git
    git push -u origin main
    ```
 
@@ -293,4 +293,4 @@ user2:password  →  user2-aap namespace
 
 - **Author**: Prakhar Srivastava (psrivast@redhat.com)
 - **Team**: RHDP Technical Marketing
-- **Repo**: https://github.com/rhpds/rhpds.aap_multiinstance
+- **Repo**: https://github.com/rhpds/rhpds.aap_self_service_portal

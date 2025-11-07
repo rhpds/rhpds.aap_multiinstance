@@ -54,7 +54,7 @@ None.
 ```yaml
 - hosts: localhost
   roles:
-    - role: rhpds.aap_multiinstance.aap_instance
+    - role: rhpds.aap_self_service_portal.aap_instance
       vars:
         aap_instance_name: production-aap
         aap_instance_version: "2.6"
@@ -65,7 +65,7 @@ None.
 ```yaml
 - hosts: localhost
   roles:
-    - role: rhpds.aap_multiinstance.aap_instance
+    - role: rhpds.aap_self_service_portal.aap_instance
       vars:
         aap_instance_multi_user: true
         aap_instance_count: 10

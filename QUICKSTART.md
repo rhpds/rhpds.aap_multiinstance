@@ -12,8 +12,8 @@ Get AAP running on OpenShift in minutes.
 
 ```bash
 # Clone the collection
-git clone https://github.com/rhpds/rhpds.aap_multiinstance.git
-cd rhpds.aap_multiinstance
+git clone https://github.com/rhpds/rhpds.aap_self_service_portal.git
+cd rhpds.aap_self_service_portal
 
 # Install Python dependencies
 pip3 install --user -r requirements.txt
@@ -23,7 +23,7 @@ ansible-galaxy collection install -r requirements.yml
 
 # Build and install this collection
 ansible-galaxy collection build --force
-ansible-galaxy collection install rhpds-aap_multiinstance-*.tar.gz --force
+ansible-galaxy collection install rhpds-aap_self_service_portal-*.tar.gz --force
 ```
 
 ## 5-Minute Single Instance Deployment
@@ -90,7 +90,7 @@ Create a playbook with your settings:
   tasks:
     - name: Deploy AAP
       ansible.builtin.include_role:
-        name: rhpds.aap_multiinstance.aap_instance
+        name: rhpds.aap_self_service_portal.aap_instance
       vars:
         # Your configuration
         aap_instance_name: my-aap
@@ -204,5 +204,5 @@ oc get pods -n aap
 
 ## Support
 
-- File issues: https://github.com/rhpds/rhpds.aap_multiinstance/issues
+- File issues: https://github.com/rhpds/rhpds.aap_self_service_portal/issues
 - Internal Red Hat support: Contact RHDP team

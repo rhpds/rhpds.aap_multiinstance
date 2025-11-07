@@ -32,7 +32,7 @@
   tasks:
     - name: Deploy AAP instance
       ansible.builtin.include_role:
-        name: rhpds.aap_multiinstance.aap_instance
+        name: rhpds.aap_self_service_portal.aap_instance
 
     - name: Display access information
       ansible.builtin.debug:

@@ -1,4 +1,4 @@
-# Python requirements for rhpds.aap_multiinstance collection
+# Python requirements for rhpds.aap_self_service_portal collection
 # Install with: pip3 install --user -r requirements.txt
 
 kubernetes>=28.1.0

@@ -62,7 +62,7 @@
   tasks:
     - name: Deploy multi-user AAP instances
       ansible.builtin.include_role:
-        name: rhpds.aap_multiinstance.aap_instance
+        name: rhpds.aap_self_service_portal.aap_instance
 
     - name: Display deployment summary
       ansible.builtin.debug:

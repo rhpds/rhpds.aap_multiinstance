@@ -1,4 +1,4 @@
-# Testing Guide for rhpds.aap_multiinstance
+# Testing Guide for rhpds.aap_self_service_portal
 
 ## Pre-requisites
 
@@ -29,10 +29,10 @@ pip install kubernetes openshift
 ```bash
 # Option 1: Install from local directory
 cd /Users/psrivast/work/code
-ansible-galaxy collection install ./rhpds.aap_multiinstance
+ansible-galaxy collection install ./rhpds.aap_self_service_portal
 
 # Option 2: Install from Git (after pushed)
-ansible-galaxy collection install git+ssh://git@github.com/rhpds/rhpds.aap_multiinstance.git
+ansible-galaxy collection install git+ssh://git@github.com/rhpds/rhpds.aap_self_service_portal.git
 
 # Option 3: Use ANSIBLE_COLLECTIONS_PATH
 export ANSIBLE_COLLECTIONS_PATH=/Users/psrivast/work/code:~/.ansible/collections
@@ -45,7 +45,7 @@ export ANSIBLE_COLLECTIONS_PATH=/Users/psrivast/work/code:~/.ansible/collections
 **Objective**: Deploy single AAP 2.6 with Controller + EDA
 
 ```bash
-cd /Users/psrivast/work/code/rhpds.aap_multiinstance
+cd /Users/psrivast/work/code/rhpds.aap_self_service_portal
 
 # Run deployment
 ansible-playbook playbooks/deploy-single-aap.yml
@@ -86,7 +86,7 @@ oc get route -n aap
 **Objective**: Deploy 3 AAP instances using `num_users` variable
 
 ```bash
-cd /Users/psrivast/work/code/rhpds.aap_multiinstance
+cd /Users/psrivast/work/code/rhpds.aap_self_service_portal
 
 # Run multi-user deployment
 ansible-playbook playbooks/deploy-multiuser-aap.yml -e num_users=3
@@ -126,7 +126,7 @@ done
 **Objective**: Deploy only EDA component with cluster-admin access
 
 ```bash
-cd /Users/psrivast/work/code/rhpds.aap_multiinstance
+cd /Users/psrivast/work/code/rhpds.aap_self_service_portal
 
 ansible-playbook playbooks/deploy-eda-only.yml
 ```
@@ -166,7 +166,7 @@ oc get clusterrolebinding | grep eda
 **NOTE**: Requires AAP manifest file
 
 ```bash
-cd /Users/psrivast/work/code/rhpds.aap_multiinstance
+cd /Users/psrivast/work/code/rhpds.aap_self_service_portal
 
 # Set manifest URL
 ansible-playbook playbooks/deploy-full-aap.yml \
@@ -198,7 +198,7 @@ oc get ansibleautomationplatform aap-full -n aap-full -o yaml | grep disabled
 **Objective**: Test with AgnosticV-style variables
 
 ```bash
-cd /Users/psrivast/work/code/rhpds.aap_multiinstance
+cd /Users/psrivast/work/code/rhpds.aap_self_service_portal
 
 # Simulate AgnosticV common variables
 ansible-playbook playbooks/agnosticv-integration-example.yml \
