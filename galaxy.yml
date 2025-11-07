@@ -7,7 +7,7 @@ readme: README.md
 authors:
   - Hicham Mourad <hmourad@redhat.com>
   - Prakhar Srivastava <psrivast@redhat.com>
-description: Ansible collection for deploying AAP Self-Service Portal on OpenShift
+description: Ansible collection for deploying AAP multi-instance and Self-Service Portal on OpenShift
 license:
   - MIT
 tags:

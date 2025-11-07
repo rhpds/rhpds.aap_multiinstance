@@ -12,9 +12,9 @@
       - "Number of users: {{ ocp4_workload_aap_multiinstance_num_users }}"
       - "Components: Controller={{ ocp4_workload_aap_multiinstance_enable_controller }}, EDA={{ ocp4_workload_aap_multiinstance_enable_eda }}, Hub={{ ocp4_workload_aap_multiinstance_enable_hub }}"
 
-- name: Deploy AAP instances using rhpds.aap_multiinstance collection
+- name: Deploy AAP instances using aap_instance role
   ansible.builtin.include_role:
-    name: rhpds.aap_multiinstance.aap_instance
+    name: rhpds.aap_self_service_portal.aap_instance
   vars:
     # Map workload variables to collection variables
     aap_instance_name: "{{ ocp4_workload_aap_multiinstance_name }}"
