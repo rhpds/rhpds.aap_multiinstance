@@ -1,39 +1,44 @@
 #SPDX-License-Identifier: MIT-0
 ---
-- name: Create OAuth2 application in AAP
-  import_tasks: oauth.yml
-  tags: [create_oauth]
+# Main entry point for self_service role
+# Handles both single and multi-user deployments
 
-- name: Create AAP token
-  import_tasks: create_token.yml
-  tags: [create_token]
+# Deploy for single instance (when called with explicit variables from AgnosticV)
+- name: Deploy self-service portal (single instance)
+  when: aap_controller_url is defined
+  include_tasks: deploy_portal.yml
 
-- name: Create OpenShift namespace
-  import_tasks: namespace.yml
-  tags: [create_namespace]
+# Deploy for each user in multi-user mode (read from cached facts)
+- name: Deploy self-service portal for each user (multi-user mode)
+  when:
+    - aap_controller_url is not defined
+    - aap_multiinstance_multi_user_mode | default(false) | bool
+  include_tasks: deploy_portal.yml
+  vars:
+    controller_host: "https://{{ item.route }}"
+    controller_username: "{{ aap_multiinstance_admin_username }}"
+    controller_password: "{{ item.password }}"
+    controller_verify_ssl: false
+    aap_controller_url: "https://{{ item.route }}"
+    aap_admin_username: "{{ aap_multiinstance_admin_username }}"
+    aap_admin_password: "{{ item.password }}"
+    aap_namespace: "{{ item.namespace }}"
+    openshift_namespace: "{{ item.namespace }}-ssap"
+  loop: "{{ aap_multiinstance_user_info | default([]) }}"
+  loop_control:
+    label: "{{ item.user }}"
 
-- name: Create OpenShift secrets
-  import_tasks: oc_secrets.yml
-  tags:
-    - create_secrets
-    - create_rhaap_secret
-    - create_scm_secret
-
-- name: Build plugin registry
-  import_tasks: plugins.yml
-  tags: [build_plugin]
-
-- name: Deploy plugin registry app
-  import_tasks: plugin_deploy.yml
-  tags: [deploy_plugin]
-
-- name: Generate Helm values with plugin integrity
-  import_tasks: helm_values.yml
-  tags:
-    - helm
-    - helm_plugins
-    - generate_helm_values
-
-- name: Update AAP OAuth2 application with RHAAP route
-  import_tasks: update_aap_oauth.yml
-  tags: [update_oauth]
+# Deploy for single instance (read from cached facts)
+- name: Deploy self-service portal (single instance from cached facts)
+  when:
+    - aap_controller_url is not defined
+    - not aap_multiinstance_multi_user_mode | default(false) | bool
+  include_tasks: deploy_portal.yml
+  vars:
+    controller_host: "{{ aap_multiinstance_deployment_info.controller_url }}"
+    controller_username: "{{ aap_multiinstance_deployment_info.admin_username }}"
+    controller_password: "{{ aap_multiinstance_deployment_info.admin_password }}"
+    controller_verify_ssl: false
+    aap_controller_url: "{{ aap_multiinstance_deployment_info.controller_url }}"
+    aap_admin_username: "{{ aap_multiinstance_deployment_info.admin_username }}"
+    aap_admin_password: "{{ aap_multiinstance_deployment_info.admin_password }}"
