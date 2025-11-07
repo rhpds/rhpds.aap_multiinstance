@@ -1,0 +1,64 @@
+- name: Get OpenShift base domain from default IngressController
+  redhat.openshift.k8s:
+    api_version: operator.openshift.io/v1
+    kind: IngressController
+    name: default
+    namespace: openshift-ingress-operator
+    state: present
+  register: ingress_info
+  when: openshift_base_domain is not defined
+  ignore_errors: true
+
+- name: Set base domain from IngressController if available
+  ansible.builtin.set_fact:
+    openshift_base_domain: "{{ ingress_info.result.status.domain }}"
+  when:
+    - openshift_base_domain is not defined
+    - ingress_info is defined
+    - not ingress_info.failed | default(false)
+    - ingress_info.result.status.domain is defined
+
+- name: Get base domain from console route as fallback
+  redhat.openshift.k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    name: console
+    namespace: openshift-console
+  register: console_route
+  when: openshift_base_domain is not defined
+
+- name: Extract base domain from console route
+  ansible.builtin.set_fact:
+    openshift_base_domain: "{{ console_route.resources[0].spec.host | regex_replace('^console-openshift-console\\.', '') }}"
+  when:
+    - openshift_base_domain is not defined
+    - console_route.resources | length > 0
+
+- name: Fail if base domain is still not defined
+  ansible.builtin.fail:
+    msg: "openshift_base_domain could not be determined. Pass it as a variable or ensure proper cluster access."
+  when: openshift_base_domain is not defined or openshift_base_domain | length == 0
+
+- name: Add Openshift repository
+  kubernetes.core.helm_repository:
+    name: openshift 
+    repo_url: "{{ helm_repo_url }}" 
+
+- name: Install RHAAP chart from openshift repo
+  kubernetes.core.helm:
+    name: "{{ helm_release_name }}"
+    release_name: "{{ helm_release_name }}"
+    chart_ref: "{{ helm_repo_name }}/{{ helm_chart_name }}"
+    chart_version: "{{ helm_chart_version }}"
+    release_namespace: "{{ openshift_namespace }}"
+    values_files: "{{ helm_values }}"
+    release_state: present
+    set_values:
+      - value: redhat-developer-hub.global.clusterRouterBase={{ openshift_base_domain }}
+        value_type: string
+      - value: redhat-developer-hub.upstream.backstage.appConfig.auth.providers.rhaap.production.checkSSL={{ aap_ssl_verify }}
+        value_type: string
+      - value: redhat-developer-hub.upstream.backstage.appConfig.ansible.rhaap.checkSSL={{ aap_ssl_verify }}
+        value_type: string
+  tags: helm
+

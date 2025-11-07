@@ -1,551 +1,122 @@
-# rhpds.aap_multiinstance
+# Red Hat Ansible Automation Platform Self-Service Portal Collection
 
-Deploy single or multiple Ansible Automation Platform (AAP) 2.5/2.6 instances on OpenShift with configurable components.
+Ansible collection for deploying AAP Self-Service Portal on OpenShift.
 
-## Overview
+## Description
 
-This collection provides flexible AAP deployment on OpenShift:
+This collection provides automation to deploy and configure the Red Hat Ansible Automation Platform (AAP) Self-Service Portal on OpenShift clusters. It includes roles for setting up OAuth2 integration, deploying the portal via Helm, and configuring dynamic plugins.
 
-- **Single instance** - One AAP deployment with all or selected components
-- **Multi-user mode** - Multiple isolated AAP instances for training/workshops
-- **Configurable components** - Enable/disable Controller, EDA, Hub, Lightspeed
-- **Version support** - AAP 2.5 or 2.6
+Tested with:
+- Ansible Automation Platform 2.6
+- Self-Service Automation Portal (GA with AAP 2.6)
+- OpenShift 4.18+
 
-## Features
+## Collection Contents
 
-- Modular component selection (Controller, EDA, Hub, Lightspeed)
-- Multi-user deployments with namespace isolation
-- Deterministic password generation (consistent across runs)
-- Automatic manifest injection for all instances
-- User RBAC (grant users access to their AAP namespaces)
-- Configurable resource requests/limits
-- Support for catalog snapshots
-- EDA cluster rolebinding for Kubernetes event sources
-- **AgnosticD v2 workload integration** for RHDP deployments
+### Roles
 
-## Requirements
-
-- OpenShift 4.12+
-- Cluster admin privileges
-- AAP subscription/manifest (for production use)
-- Python 3.9+
-
-### Python Dependencies
-
-Install Python dependencies:
-
-```bash
-pip3 install --user -r requirements.txt
-```
-
-Or manually:
-```bash
-pip3 install --user kubernetes openshift
-```
-
-### Ansible Collections
-
-Install required collections:
-
-```bash
-ansible-galaxy collection install -r requirements.yml
-```
-
-Or manually:
-```bash
-ansible-galaxy collection install kubernetes.core
-```
+- **self-service**: Main role for deploying AAP Self-Service Portal
+  - Creates OAuth2 application in AAP
+  - Generates AAP access tokens
+  - Creates OpenShift namespace and secrets
+  - Builds and deploys plugin registry
+  - Deploys AAP Self-Service Portal via Helm
+  - Updates OAuth2 redirect URIs
 
 ## Installation
 
-### From Git
+```bash
+ansible-galaxy collection install rhpds.aap_self_service_portal
+```
+
+Or install from source:
 
 ```bash
-ansible-galaxy collection install git+https://github.com/rhpds/rhpds.aap_multiinstance.git
-```
-
-### From Source
-
-```bash
-# Clone the repository
-git clone https://github.com/rhpds/rhpds.aap_multiinstance.git
-cd rhpds.aap_multiinstance
-
-# Install dependencies
-pip3 install --user -r requirements.txt
-ansible-galaxy collection install -r requirements.yml
-
-# Build and install the collection
-ansible-galaxy collection build --force
-ansible-galaxy collection install rhpds-aap_multiinstance-*.tar.gz --force
-```
-
-## Quick Start
-
-### Prerequisites
-
-1. Login to your OpenShift cluster:
-```bash
-oc login https://api.your-cluster.com:6443
-```
-
-2. Verify you have cluster-admin access:
-```bash
-oc auth can-i '*' '*'
-```
-
-### Single AAP Instance
-
-Use the provided playbook:
-
-```bash
-cd rhpds.aap_multiinstance
-ansible-playbook playbooks/deploy-single-aap.yml
-```
-
-Or create your own playbook:
-
-```yaml
----
-- name: Deploy AAP
-  hosts: localhost
-  gather_facts: false
-  tasks:
-    - name: Deploy AAP instance
-      ansible.builtin.include_role:
-        name: rhpds.aap_multiinstance.aap_instance
-      vars:
-        aap_instance_name: aap
-        aap_instance_namespace: aap
-        aap_instance_version: "2.5"
-        aap_instance_enable_controller: true
-        aap_instance_enable_eda: true
-        aap_instance_enable_hub: false
-        aap_instance_enable_lightspeed: false
-```
-
-### Multi-User Deployment (RHDP Integration)
-
-Use the provided playbook:
-
-```bash
-cd rhpds.aap_multiinstance
-
-# Deploy for 3 users
-ansible-playbook playbooks/deploy-multiuser-aap.yml -e num_users=3
-
-# Deploy for 10 users
-ansible-playbook playbooks/deploy-multiuser-aap.yml -e num_users=10
-```
-
-Or create your own playbook:
-
-```yaml
----
-- name: Deploy multi-user AAP
-  hosts: localhost
-  gather_facts: false
-  tasks:
-    - name: Deploy AAP instances
-      ansible.builtin.include_role:
-        name: rhpds.aap_multiinstance.aap_instance
-      vars:
-        # Set num_users - automatically enables multi-user mode when > 1
-        num_users: 5  # Or from AgnosticV common.yaml
-
-        aap_instance_user_prefix: "user"  # Matches htpasswd users
-        aap_instance_name: aap
-        aap_instance_namespace: aap
-        aap_instance_version: "2.6"
-        aap_instance_enable_controller: true
-        aap_instance_enable_eda: true
-```
-
-This creates AAP instances matching user accounts:
-- `user1` → `user1-aap` namespace with `user1-aap` instance
-- `user2` → `user2-aap` namespace with `user2-aap` instance
-- ... through `user5-aap`
-
-**Note**: The `num_users` variable integrates with RHDP's htpasswd/RHSSO user provisioning pattern.
-
-## Configuration Variables
-
-### Instance Settings
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `aap_instance_name` | `aap` | Instance name |
-| `aap_instance_namespace` | `aap` | Deployment namespace |
-| `aap_instance_version` | `2.5` | AAP version (2.5 or 2.6) |
-
-### Multi-User Mode (RHDP Integration)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `aap_instance_num_users` | `{{ num_users \| default(1) }}` | Number of users (from RHDP `num_users` variable) |
-| `aap_instance_multi_user` | Auto-detected | Auto-enables when `num_users > 1` |
-| `aap_instance_user_prefix` | `user` | User prefix (must match htpasswd/RHSSO) |
-| `aap_instance_user_password` | `{{ common_password \| default('openshift') }}` | User password (from RHDP `common_password`) |
-
-**Key Integration Points:**
-- `num_users` variable from AgnosticV/AgDv2 automatically controls instance count
-- When `num_users > 1`, multi-user mode activates automatically
-- User naming matches RHDP pattern: `user1`, `user2`, etc.
-- Each user gets isolated AAP instance: `user1-aap`, `user2-aap`, etc.
-
-### Component Toggles
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `aap_instance_enable_controller` | `true` | Enable Automation Controller |
-| `aap_instance_enable_eda` | `true` | Enable Event-Driven Ansible |
-| `aap_instance_enable_hub` | `false` | Enable Private Automation Hub |
-| `aap_instance_enable_lightspeed` | `false` | Enable Ansible Lightspeed |
-
-### Authentication
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `aap_instance_admin_username` | `admin` | Admin username |
-| `aap_instance_admin_password` | `""` | Admin password (auto-generated if empty) |
-| `aap_instance_admin_password_length` | `16` | Password length if auto-generated |
-
-### Resource Configuration
-
-#### Controller Resources
-
-```yaml
-aap_instance_controller_replicas: 1
-aap_instance_controller_web_replicas: 1
-aap_instance_controller_task_replicas: 1
-
-aap_instance_controller_web_resource_requirements:
-  requests:
-    cpu: 500m
-    memory: 2Gi
-  limits:
-    cpu: 2000m
-    memory: 4Gi
-```
-
-#### EDA Resources
-
-```yaml
-aap_instance_eda_replicas: 1
-aap_instance_eda_resource_requirements:
-  requests:
-    cpu: 250m
-    memory: 1Gi
-  limits:
-    cpu: 1000m
-    memory: 2Gi
-```
-
-#### Hub Resources
-
-```yaml
-aap_instance_hub_replicas: 1
-aap_instance_hub_content_workers: 2
-aap_instance_hub_api_workers: 2
-aap_instance_hub_file_storage_size: 100Gi
-aap_instance_hub_file_storage_access_mode: ReadWriteOnce
-aap_instance_hub_file_storage_class: ""
-```
-
-### Manifest Injection
-
-```yaml
-aap_instance_inject_manifest: true
-aap_instance_manifest:
-  url: "https://example.com/manifest.zip"
-  username: ""  # optional
-  password: ""  # optional
-```
-
-### EDA Cluster Permissions
-
-```yaml
-aap_instance_eda_create_rolebinding: true
-aap_instance_eda_service_account: default
-aap_instance_eda_cluster_role: cluster-admin
-```
-
-## Usage Examples
-
-### AAP 2.6 with All Components
-
-```yaml
-- name: Full AAP deployment
-  ansible.builtin.include_role:
-    name: rhpds.aap_multiinstance.aap_instance
-  vars:
-    aap_instance_version: "2.6"
-    aap_instance_enable_controller: true
-    aap_instance_enable_eda: true
-    aap_instance_enable_hub: true
-    aap_instance_enable_lightspeed: true
-    aap_instance_inject_manifest: true
-    aap_instance_manifest:
-      url: "{{ manifest_url }}"
-```
-
-### Controller-Only Deployment
-
-```yaml
-- name: Controller only
-  ansible.builtin.include_role:
-    name: rhpds.aap_multiinstance.aap_instance
-  vars:
-    aap_instance_enable_controller: true
-    aap_instance_enable_eda: false
-    aap_instance_enable_hub: false
-    aap_instance_enable_lightspeed: false
-```
-
-### EDA with Kubernetes Event Sources
-
-```yaml
-- name: EDA with cluster access
-  ansible.builtin.include_role:
-    name: rhpds.aap_multiinstance.aap_instance
-  vars:
-    aap_instance_enable_controller: false
-    aap_instance_enable_eda: true
-    aap_instance_eda_create_rolebinding: true
-```
-
-### Workshop Setup (10 Students with RHDP)
-
-```yaml
-- name: Workshop AAP instances
-  ansible.builtin.include_role:
-    name: rhpds.aap_multiinstance.aap_instance
-  vars:
-    # num_users typically comes from AgnosticV common.yaml
-    num_users: 10
-
-    # User prefix matches your htpasswd/RHSSO config
-    aap_instance_user_prefix: "user"
-
-    aap_instance_version: "2.6"
-    aap_instance_enable_controller: true
-    aap_instance_enable_eda: true
-
-    # Reduced resources for workshop
-    aap_instance_controller_web_resource_requirements:
-      requests:
-        cpu: 250m
-        memory: 1Gi
-      limits:
-        cpu: 1000m
-        memory: 2Gi
-```
-
-This creates 10 AAP instances matching RHDP user accounts.
-
-## Architecture
-
-### Single Instance Mode
-
-```
-Namespace: aap
-├── AAP Operator (subscription)
-├── OperatorGroup
-└── AnsibleAutomationPlatform CR
-    ├── Controller (if enabled)
-    ├── EDA (if enabled)
-    ├── Hub (if enabled)
-    └── Lightspeed (if enabled)
-```
-
-### Multi-User Mode
-
-```
-Namespace: student1-aap
-├── AAP Operator
-├── OperatorGroup
-└── AnsibleAutomationPlatform CR
-
-Namespace: student2-aap
-├── AAP Operator
-├── OperatorGroup
-└── AnsibleAutomationPlatform CR
-
-... (up to aap_instance_count)
-```
-
-## Advanced Configuration
-
-### Using Catalog Snapshots
-
-For controlled operator versions:
-
-```yaml
-aap_instance_use_catalog_snapshot: true
-aap_instance_catalogsource_name: olm-snapshot-redhat-catalog
-aap_instance_catalog_snapshot_image: quay.io/gpte-devops-automation/olm_snapshot_redhat_catalog
-aap_instance_catalog_snapshot_image_tag: v4.19_2025_09_29
-```
-
-### Custom Storage Class for Hub
-
-```yaml
-aap_instance_enable_hub: true
-aap_instance_hub_file_storage_class: ocs-storagecluster-cephfs
-aap_instance_hub_file_storage_size: 200Gi
-```
-
-### Extended Token Lifecycle
-
-```yaml
-# 4 weeks instead of default 2 weeks
-aap_instance_ocp_token_lifecycle: 2419200
-```
-
-## Troubleshooting
-
-### Check Operator Installation
-
-```bash
-oc get csv -n aap
-oc get subscription -n aap
-```
-
-### Check AAP Instance Status
-
-```bash
-oc get ansibleautomationplatform -n aap
-oc describe ansibleautomationplatform aap -n aap
-```
-
-### Check Component Pods
-
-```bash
-oc get pods -n aap
-```
-
-### View Controller Logs
-
-```bash
-oc logs -n aap deployment/aap-controller-web
-```
-
-### Common Issues
-
-**Operator not installing**
-- Check subscription and catalog source
-- Verify cluster has internet access (or catalog snapshot is configured)
-
-**Instance stuck in deploying state**
-- Check operator logs: `oc logs -n aap deployment/aap-operator-controller-manager`
-- Verify resource quotas and limits
-
-**Manifest upload fails**
-- Ensure controller is fully ready before manifest injection
-- Check manifest URL is accessible
-- Verify manifest is valid for AAP version
-
-## AgnosticD v2 Integration
-
-This collection includes an AgnosticD v2 workload for RHDP deployments.
-
-### Workload Role
-
-The `ocp4_workload_aap_multiinstance` role provides AgnosticD v2 integration with:
-
-- Standard ACTION-based provisioning (`provision`/`destroy`)
-- Integration with RHDP variables (`guid`, `num_users`, `common_password`)
-- User access grants via OpenShift RBAC
-- RHDP catalog output via `agnosticd_user_info`
-
-### Usage in AgnosticV
-
-**Example workload configuration:**
-
-```yaml
-# In your AgnosticV common.yaml or workload vars
-
-# Standard RHDP variables
-guid: "{{ lookup('env', 'GUID') }}"
-num_users: 10
-common_password: openshift
-
-# Deploy AAP workload
-workloads:
-  - name: ocp4_workload_aap_multiinstance
-    vars:
-      ACTION: provision
-      ocp4_workload_aap_multiinstance_version: "2.6"
-      ocp4_workload_aap_multiinstance_enable_controller: true
-      ocp4_workload_aap_multiinstance_enable_eda: true
-      ocp4_workload_aap_multiinstance_grant_user_access: true
-      ocp4_workload_aap_multiinstance_inject_manifest: true
-      ocp4_workload_aap_multiinstance_manifest:
-        url: "https://your-manifest-url/manifest.zip"
-```
-
-**This will:**
-- Deploy 10 AAP instances (`user1-aap` through `user10-aap`)
-- Grant each user admin access to their namespace
-- Inject manifest into all controllers
-- Output user access info to RHDP catalog
-
-### User Access Output
-
-Users will see in the RHDP catalog:
-
-```
-user1 AAP Controller: https://user1-aap-controller-user1-aap.apps.cluster.example.com
-user1 Admin Username: admin
-user1 Admin Password: <deterministic-password>
-
-user2 AAP Controller: https://user2-aap-controller-user2-aap.apps.cluster.example.com
-user2 Admin Username: admin
-user2 Admin Password: <deterministic-password>
-...
-```
-
-### Workload Variables
-
-All workload variables are prefixed with `ocp4_workload_aap_multiinstance_`. See `roles/ocp4_workload_aap_multiinstance/defaults/main.yml` for full list.
-
-**Key variables:**
-- `grant_user_access` (default: `true`) - Grant users RBAC to their namespaces
-- `user_role` (default: `admin`) - OpenShift role to grant
-- `inject_manifest` (default: `false`) - Auto-inject manifest
-- `password_salt` (default: `{{ guid }}`) - Salt for password generation
-
-## Development
-
-### Testing
-
-```bash
-# Deploy test instance
-ansible-playbook tests/deploy-single.yml
-
-# Deploy multi-user test
-ansible-playbook tests/deploy-multiuser.yml
-
-# Cleanup
-ansible-playbook tests/cleanup.yml
-```
-
-### Building Collection
-
-```bash
+git clone https://github.com/rhpds/rhpds.aap_self_service_portal.git
+cd rhpds.aap_self_service_portal
 ansible-galaxy collection build
+ansible-galaxy collection install rhpds-aap_self_service_portal-*.tar.gz
+```
+
+## Requirements
+
+- OpenShift cluster access
+- AAP 2.6+ instance running on OpenShift
+- Ansible collections:
+  - `redhat.openshift`
+  - `kubernetes.core`
+  - `ansible.controller`
+
+## Usage
+
+### Basic Example
+
+```yaml
+- name: Deploy AAP Self-Service Portal
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Include self-service role
+      ansible.builtin.include_role:
+        name: rhpds.aap_self_service_portal.self_service
+      vars:
+        controller_host: "https://aap-controller.apps.example.com"
+        controller_username: admin
+        controller_password: "{{ aap_admin_password }}"
+        openshift_namespace: ssap
+        openshift_base_domain: "apps.example.com"
+```
+
+### AgnosticD v2 Integration
+
+```yaml
+workloads:
+  - rhpds.aap_self_service_portal.self_service
+
+# Variables
+controller_host: "{{ aap_controller_url }}"
+controller_username: "{{ aap_admin_username }}"
+controller_password: "{{ aap_admin_password }}"
+openshift_namespace: "{{ aap_namespace }}-ssap"
+```
+
+## Variables
+
+Key variables (see `roles/self-service/defaults/main.yml` for full list):
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `controller_host` | AAP Controller URL | Required |
+| `controller_username` | AAP admin username | Required |
+| `controller_password` | AAP admin password | Required |
+| `openshift_namespace` | OpenShift namespace for portal | `ssap` |
+| `openshift_base_domain` | Cluster base domain | Auto-detected |
+| `helm_chart_version` | Portal Helm chart version | `2.0.3` |
+| `aap_ssl_verify` | Verify AAP SSL certificates | `false` |
+
+## OpenShift Base Domain Detection
+
+The role automatically detects the OpenShift base domain using multiple methods:
+
+1. **IngressController** (requires cluster-admin): Queries `openshift-ingress-operator/default`
+2. **Console Route** (fallback): Extracts domain from `openshift-console/console` route
+3. **Manual override**: Pass `openshift_base_domain` variable
+
+This allows the role to work with both cluster-admin and regular user permissions.
+
+**This fix resolves the error:**
+```
+Error from server (Forbidden): ingresscontrollers.operator.openshift.io "default" is forbidden:
+User "user1" cannot get resource "ingresscontrollers"
 ```
 
 ## License
 
-GPL-2.0-or-later
+MIT
 
-## Author
+## Author Information
 
-Prakhar Srivastava (psrivast@redhat.com)
-Manager, Technical Marketing - Red Hat
+- Hicham Mourad <hmourad@redhat.com>
+- Prakhar Srivastava <psrivast@redhat.com>
 
-## Support
-
-- Issues: https://github.com/rhpds/rhpds.aap_multiinstance/issues
-- RHDP Documentation: Internal Red Hat resources
+Red Hat Demo Platform (RHDP)

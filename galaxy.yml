@@ -1,40 +1,26 @@
 #SPDX-License-Identifier: MIT-0
-### REQUIRED
+---
 namespace: rhpds
-
-name: aap_multiinstance
-
+name: aap_self_service_portal
 version: 1.0.0
-
 readme: README.md
-
 authors:
-- Prakhar Srivastava <psrivast@redhat.com>
-
-### OPTIONAL but strongly recommended
-description: Multi-instance Ansible Automation Platform deployment for OpenShift with configurable components
-
+  - Hicham Mourad <hmourad@redhat.com>
+  - Prakhar Srivastava <psrivast@redhat.com>
+description: Ansible collection for deploying AAP Self-Service Portal on OpenShift
 license:
-- GPL-2.0-or-later
-
-license_file: ''
-
+  - MIT
 tags:
   - ansible
-  - automation
   - aap
+  - automation
   - openshift
-  - multiinstance
-
+  - self-service
+  - rhdp
 dependencies:
   kubernetes.core: ">=2.3.0"
-
-repository: https://github.com/rhpds/rhpds.aap_multiinstance
-
-documentation: https://github.com/rhpds/rhpds.aap_multiinstance
-
-homepage: https://github.com/rhpds/rhpds.aap_multiinstance
-
-issues: https://github.com/rhpds/rhpds.aap_multiinstance/issues
-
-build_ignore: []
+  redhat.openshift: ">=2.0.0"
+repository: https://github.com/rhpds/rhpds.aap_self_service_portal
+documentation: https://github.com/rhpds/rhpds.aap_self_service_portal
+homepage: https://github.com/rhpds/rhpds.aap_self_service_portal
+issues: https://github.com/rhpds/rhpds.aap_self_service_portal/issues
