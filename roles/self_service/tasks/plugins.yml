@@ -37,11 +37,25 @@
           - type: ConfigChange
   tags: [deploy_plugin]
 
+- name: Check if oc command is available
+  command: which oc
+  register: oc_check
+  failed_when: false
+  changed_when: false
+  delegate_to: localhost
+
 - name: Start plugin-registry build from local dir
   command: >
     oc start-build plugin-registry
     --from-dir={{ plugin_root_dir }}
     --wait
-    -n {{ openshift_namespace }} 
+    -n {{ openshift_namespace }}
   delegate_to: localhost
-  run_once: true
+  when: oc_check.rc == 0
+  environment:
+    KUBECONFIG: "{{ lookup('env', 'K8S_AUTH_KUBECONFIG') | default(lookup('env', 'KUBECONFIG')) }}"
+
+- name: Skip plugin build if oc not available
+  debug:
+    msg: "Skipping plugin build - oc command not available. Plugin registry will use empty image."
+  when: oc_check.rc != 0
