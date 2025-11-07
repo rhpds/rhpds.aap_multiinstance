@@ -3,6 +3,14 @@
 # Main entry point for self_service role
 # Handles both single and multi-user deployments
 
+- name: Debug - Show what variables are available
+  ansible.builtin.debug:
+    msg:
+      - "aap_controller_url defined: {{ aap_controller_url is defined }}"
+      - "aap_controller_url value: {{ aap_controller_url | default('UNDEFINED') }}"
+      - "aap_multiinstance_multi_user_mode: {{ aap_multiinstance_multi_user_mode | default('UNDEFINED') }}"
+      - "aap_multiinstance_user_info length: {{ aap_multiinstance_user_info | default([]) | length }}"
+
 # Deploy for single instance (when called with explicit variables from AgnosticV)
 - name: Deploy self-service portal (single instance)
   when: aap_controller_url is defined
