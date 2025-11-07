@@ -18,9 +18,6 @@
 
 # Deploy for each user in multi-user mode (read from cached facts)
 - name: Deploy self-service portal for each user (multi-user mode)
-  when:
-    - aap_controller_url is not defined
-    - aap_multiinstance_multi_user_mode | default(false) | bool
   include_tasks: deploy_portal.yml
   vars:
     controller_host: "https://{{ item.route }}"
@@ -35,6 +32,9 @@
   loop: "{{ aap_multiinstance_user_info | default([]) }}"
   loop_control:
     label: "{{ item.user }}"
+  when:
+    - aap_controller_url is not defined
+    - aap_multiinstance_multi_user_mode | default(false) | bool
 
 # Deploy for single instance (read from cached facts)
 - name: Deploy self-service portal (single instance from cached facts)
