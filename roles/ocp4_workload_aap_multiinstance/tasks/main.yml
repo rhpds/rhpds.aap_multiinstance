@@ -4,10 +4,8 @@
 
 - name: Run AAP multi-instance workload tasks
   ansible.builtin.include_tasks: workload.yml
-  when:
-    - ocp4_workload_aap_multiinstance_action | default('deploy') == 'deploy'
+  when: ACTION is not defined or ACTION == "create" or ACTION == "provision"
 
 - name: Run AAP multi-instance removal tasks
   ansible.builtin.include_tasks: remove_workload.yml
-  when:
-    - ocp4_workload_aap_multiinstance_action | default('deploy') == 'remove'
+  when: ACTION is defined and (ACTION == "destroy" or ACTION == "stop")
