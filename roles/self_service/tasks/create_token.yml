@@ -13,5 +13,5 @@
 
 - name: Show AAP token value
   debug:
-    msg: "AAP token: {{ aap_token_result.ansible_facts.aap_token.token }}"
+    msg: "AAP token: {{ aap_token_result.token }}"
   when: show_token | default(false)
