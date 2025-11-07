@@ -12,47 +12,38 @@
       - "Number of users: {{ ocp4_workload_aap_multiinstance_num_users }}"
       - "Components: Controller={{ ocp4_workload_aap_multiinstance_enable_controller }}, EDA={{ ocp4_workload_aap_multiinstance_enable_eda }}, Hub={{ ocp4_workload_aap_multiinstance_enable_hub }}"
 
-- name: Deploy AAP instances using aap_instance role
-  ansible.builtin.include_role:
-    name: rhpds.aap_self_service_portal.aap_instance
-  vars:
-    # Map workload variables to collection variables
+# ---------------------------------------------------------------
+# AAP Deployment - directly integrated (no external role dependency)
+# ---------------------------------------------------------------
+
+# Map workload variables to aap_instance variables used by deployment tasks
+- name: Set AAP deployment variables
+  ansible.builtin.set_fact:
     aap_instance_name: "{{ ocp4_workload_aap_multiinstance_name }}"
     aap_instance_namespace: "{{ ocp4_workload_aap_multiinstance_namespace }}"
     aap_instance_version: "{{ ocp4_workload_aap_multiinstance_version }}"
-
-    # Multi-user settings
-    num_users: "{{ ocp4_workload_aap_multiinstance_num_users }}"
+    aap_instance_num_users: "{{ ocp4_workload_aap_multiinstance_num_users }}"
+    aap_instance_multi_user: "{{ ocp4_workload_aap_multiinstance_multi_user }}"
     aap_instance_user_prefix: "{{ ocp4_workload_aap_multiinstance_user_prefix }}"
     aap_instance_user_password: "{{ ocp4_workload_aap_multiinstance_user_password }}"
-
-    # Component toggles
     aap_instance_enable_controller: "{{ ocp4_workload_aap_multiinstance_enable_controller }}"
     aap_instance_enable_eda: "{{ ocp4_workload_aap_multiinstance_enable_eda }}"
     aap_instance_enable_hub: "{{ ocp4_workload_aap_multiinstance_enable_hub }}"
     aap_instance_enable_lightspeed: "{{ ocp4_workload_aap_multiinstance_enable_lightspeed }}"
-
-    # Authentication
     aap_instance_admin_password: "{{ ocp4_workload_aap_multiinstance_admin_password }}"
     aap_instance_admin_password_length: "{{ ocp4_workload_aap_multiinstance_admin_password_length }}"
     aap_instance_admin_username: "{{ ocp4_workload_aap_multiinstance_admin_username }}"
     aap_instance_password_salt: "{{ ocp4_workload_aap_multiinstance_password_salt }}"
-
-    # Operator settings
     aap_instance_operator_channel: "{{ ocp4_workload_aap_multiinstance_operator_channel }}"
     aap_instance_operator_name: "{{ ocp4_workload_aap_multiinstance_operator_name }}"
     aap_instance_operator_csv_nameprefix: "{{ ocp4_workload_aap_multiinstance_operator_csv_nameprefix }}"
     aap_instance_operator_catalog: "{{ ocp4_workload_aap_multiinstance_operator_catalog }}"
     aap_instance_starting_csv: "{{ ocp4_workload_aap_multiinstance_starting_csv }}"
     aap_instance_automatic_install_plan_approval: "{{ ocp4_workload_aap_multiinstance_automatic_install_plan_approval }}"
-
-    # Catalog snapshot
     aap_instance_use_catalog_snapshot: "{{ ocp4_workload_aap_multiinstance_use_catalog_snapshot }}"
     aap_instance_catalogsource_name: "{{ ocp4_workload_aap_multiinstance_catalogsource_name }}"
     aap_instance_catalog_snapshot_image: "{{ ocp4_workload_aap_multiinstance_catalog_snapshot_image }}"
     aap_instance_catalog_snapshot_image_tag: "{{ ocp4_workload_aap_multiinstance_catalog_snapshot_image_tag }}"
-
-    # Resources
     aap_instance_controller_replicas: "{{ ocp4_workload_aap_multiinstance_controller_replicas }}"
     aap_instance_controller_web_replicas: "{{ ocp4_workload_aap_multiinstance_controller_web_replicas }}"
     aap_instance_controller_task_replicas: "{{ ocp4_workload_aap_multiinstance_controller_task_replicas }}"
@@ -60,13 +51,9 @@
     aap_instance_controller_task_resource_requirements: "{{ ocp4_workload_aap_multiinstance_controller_task_resource_requirements }}"
     aap_instance_eda_replicas: "{{ ocp4_workload_aap_multiinstance_eda_replicas }}"
     aap_instance_eda_resource_requirements: "{{ ocp4_workload_aap_multiinstance_eda_resource_requirements }}"
-
-    # EDA permissions
     aap_instance_eda_create_rolebinding: "{{ ocp4_workload_aap_multiinstance_eda_create_rolebinding }}"
     aap_instance_eda_service_account: "{{ ocp4_workload_aap_multiinstance_eda_service_account }}"
     aap_instance_eda_cluster_role: "{{ ocp4_workload_aap_multiinstance_eda_cluster_role }}"
-
-    # Hub settings
     aap_instance_hub_replicas: "{{ ocp4_workload_aap_multiinstance_hub_replicas }}"
     aap_instance_hub_content_workers: "{{ ocp4_workload_aap_multiinstance_hub_content_workers }}"
     aap_instance_hub_api_workers: "{{ ocp4_workload_aap_multiinstance_hub_api_workers }}"
@@ -74,20 +61,36 @@
     aap_instance_hub_file_storage_access_mode: "{{ ocp4_workload_aap_multiinstance_hub_file_storage_access_mode }}"
     aap_instance_hub_file_storage_class: "{{ ocp4_workload_aap_multiinstance_hub_file_storage_class }}"
     aap_instance_hub_resource_requirements: "{{ ocp4_workload_aap_multiinstance_hub_resource_requirements }}"
-
-    # Manifest
     aap_instance_inject_manifest: "{{ ocp4_workload_aap_multiinstance_inject_manifest }}"
     aap_instance_manifest: "{{ ocp4_workload_aap_multiinstance_manifest }}"
-
-    # Network
     aap_instance_ocp_token_lifecycle: "{{ ocp4_workload_aap_multiinstance_ocp_token_lifecycle }}"
     aap_instance_route_tls_termination: "{{ ocp4_workload_aap_multiinstance_route_tls_termination }}"
     aap_instance_redis_mode: "{{ ocp4_workload_aap_multiinstance_redis_mode }}"
-
-    # Misc
     aap_instance_extra_wait_minutes: "{{ ocp4_workload_aap_multiinstance_extra_wait_minutes }}"
     aap_instance_no_log: "{{ ocp4_workload_aap_multiinstance_no_log }}"
     aap_instance_image_pull_policy: "{{ ocp4_workload_aap_multiinstance_image_pull_policy }}"
+
+# Validate AAP configuration
+- name: Validate AAP configuration
+  ansible.builtin.include_tasks: validate.yml
+
+# Setup AAP operator (single instance mode)
+- name: Setup AAP operator and prerequisites (single instance)
+  when: not aap_instance_multi_user | bool
+  ansible.builtin.include_tasks: setup_operator.yml
+
+# Deploy single AAP instance
+- name: Deploy single AAP instance
+  when: not aap_instance_multi_user | bool
+  ansible.builtin.include_tasks: deploy_instance.yml
+  vars:
+    _instance_name: "{{ aap_instance_name }}"
+    _instance_namespace: "{{ aap_instance_namespace }}"
+
+# Deploy multiple AAP instances (multi-user mode)
+- name: Deploy multiple AAP instances (multi-user mode)
+  when: aap_instance_multi_user | bool
+  ansible.builtin.include_tasks: deploy_multiuser.yml
 
 # Store deployment info for user access tasks
 - name: Store deployment information
