@@ -105,7 +105,7 @@
     aap_multiinstance_user_info: "{{ _user_access_info | default([]) }}"
     aap_multiinstance_multi_user_mode: "{{ ocp4_workload_aap_multiinstance_multi_user | bool }}"
     aap_multiinstance_admin_username: "{{ ocp4_workload_aap_multiinstance_admin_username }}"
-  cacheable: yes
+    cacheable: yes
 
 - name: Grant user access to AAP namespaces (multi-user mode)
   when:
