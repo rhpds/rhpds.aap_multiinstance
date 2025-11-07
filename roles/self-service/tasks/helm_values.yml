@@ -1,5 +1,5 @@
 - name: Get OpenShift base domain from default IngressController
-  redhat.openshift.k8s:
+  kubernetes.core.k8s:
     api_version: operator.openshift.io/v1
     kind: IngressController
     name: default
@@ -19,7 +19,7 @@
     - ingress_info.result.status.domain is defined
 
 - name: Get base domain from console route as fallback
-  redhat.openshift.k8s_info:
+  kubernetes.core.k8s_info:
     api_version: route.openshift.io/v1
     kind: Route
     name: console
