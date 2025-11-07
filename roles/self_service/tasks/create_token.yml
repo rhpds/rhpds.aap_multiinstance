@@ -11,6 +11,10 @@
     validate_certs: "{{ controller_verify_ssl }}"
   register: aap_token_result
 
+- name: Debug - Show full token result structure
+  debug:
+    var: aap_token_result
+
 - name: Show AAP token value
   debug:
     msg: "AAP token: {{ aap_token_result.token }}"
