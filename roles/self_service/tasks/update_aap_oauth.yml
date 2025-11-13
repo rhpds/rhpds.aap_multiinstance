@@ -27,7 +27,7 @@
 
 - name: Get OAuth application ID from Gateway
   ansible.builtin.uri:
-    url: "{{ aap_controller_url }}/api/gateway/v1/applications/?name={{ aap_oauth_client_name }}"
+    url: "{{ aap_controller_url }}/api/gateway/v1/applications/?name={{ aap_oauth_client_name | urlencode }}"
     method: GET
     user: "{{ aap_admin_username }}"
     password: "{{ aap_admin_password }}"
