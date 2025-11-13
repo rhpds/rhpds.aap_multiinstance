@@ -1,0 +1,51 @@
+---
+# Download and extract self-service automation portal plugins from S3
+
+- name: Create temporary directory for plugin download
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: plugins
+  register: _plugin_temp_dir
+
+- name: Download self-service automation portal plugins tarball
+  ansible.builtin.get_url:
+    url: "{{ service_automation_url }}"
+    dest: "{{ _plugin_temp_dir.path }}/plugins.tar.gz"
+    url_username: "{{ s3_rhpds_private_username | default(omit) }}"
+    url_password: "{{ s3_rhpds_private_password | default(omit) }}"
+    force_basic_auth: true
+    validate_certs: true
+  register: _plugin_download
+  when: service_automation_url is defined and service_automation_url | length > 0
+
+- name: Create plugins directory on bastion
+  ansible.builtin.file:
+    path: "{{ plugin_root_dir }}"
+    state: directory
+    mode: '0755'
+  delegate_to: bastion
+
+- name: Extract plugins tarball to bastion
+  ansible.builtin.unarchive:
+    src: "{{ _plugin_download.dest }}"
+    dest: "{{ plugin_root_dir }}"
+    remote_src: false
+  delegate_to: bastion
+  when: _plugin_download is defined and _plugin_download.dest is defined
+
+- name: List extracted plugin files
+  ansible.builtin.find:
+    paths: "{{ plugin_root_dir }}"
+    patterns: "*.tgz"
+  delegate_to: bastion
+  register: _plugin_files
+
+- name: Show downloaded plugin files
+  ansible.builtin.debug:
+    msg: "Found {{ _plugin_files.matched }} plugin files in {{ plugin_root_dir }}"
+
+- name: Clean up temporary directory
+  ansible.builtin.file:
+    path: "{{ _plugin_temp_dir.path }}"
+    state: absent
+  when: _plugin_temp_dir.path is defined

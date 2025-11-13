@@ -15,6 +15,9 @@
 - name: Create OpenShift secrets
   include_tasks: oc_secrets.yml
 
+- name: Download plugins from S3
+  include_tasks: download_plugins.yml
+
 - name: Build plugin registry
   include_tasks: plugins.yml
 
