@@ -129,6 +129,16 @@
   loop_control:
     label: "{{ item.user }}"
 
+# Download plugins once (shared across all users)
+- name: Download self-service portal plugins from S3
+  ansible.builtin.include_role:
+    name: rhpds.aap_self_service_portal.self_service
+    tasks_from: download_plugins
+  when:
+    - ocp4_workload_aap_multiinstance_multi_user | bool
+    - service_automation_url is defined
+    - service_automation_url | length > 0
+
 # Deploy self-service portal for each user (multi-user mode)
 - name: Deploy self-service portal for each user
   ansible.builtin.include_role:
@@ -165,6 +175,16 @@
   until: _aap_api_check.status == 200
   retries: 30
   delay: 10
+
+# Download plugins once (single instance)
+- name: Download self-service portal plugins from S3
+  ansible.builtin.include_role:
+    name: rhpds.aap_self_service_portal.self_service
+    tasks_from: download_plugins
+  when:
+    - not ocp4_workload_aap_multiinstance_multi_user | bool
+    - service_automation_url is defined
+    - service_automation_url | length > 0
 
 # Deploy self-service portal (single instance mode)
 - name: Deploy self-service portal (single instance)
