@@ -32,11 +32,25 @@
     mode: '0755'
   delegate_to: bastion
 
-- name: Extract plugins tarball to bastion
-  ansible.builtin.unarchive:
+- name: Copy plugins tarball to bastion
+  ansible.builtin.copy:
     src: "{{ _plugin_download.dest }}"
+    dest: "{{ plugin_root_dir }}/plugins.tar.gz"
+  delegate_to: bastion
+  when: _plugin_download is defined and _plugin_download.dest is defined
+
+- name: Extract plugins tarball on bastion
+  ansible.builtin.unarchive:
+    src: "{{ plugin_root_dir }}/plugins.tar.gz"
     dest: "{{ plugin_root_dir }}"
-    remote_src: false
+    remote_src: true
+  delegate_to: bastion
+  when: _plugin_download is defined and _plugin_download.dest is defined
+
+- name: Remove tarball from bastion after extraction
+  ansible.builtin.file:
+    path: "{{ plugin_root_dir }}/plugins.tar.gz"
+    state: absent
   delegate_to: bastion
   when: _plugin_download is defined and _plugin_download.dest is defined
 
