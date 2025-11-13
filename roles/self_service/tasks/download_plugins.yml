@@ -1,20 +1,27 @@
 ---
 # Download and extract self-service automation portal plugins from S3
 
+- name: Parse S3 URL
+  ansible.builtin.set_fact:
+    _s3_bucket: "{{ service_automation_url | regex_replace('^s3://([^/]+)/.*', '\\1') }}"
+    _s3_object: "{{ service_automation_url | regex_replace('^s3://[^/]+/(.*)', '\\1') }}"
+  when: service_automation_url is defined and service_automation_url | length > 0
+
 - name: Create temporary directory for plugin download
   ansible.builtin.tempfile:
     state: directory
     suffix: plugins
   register: _plugin_temp_dir
 
-- name: Download self-service automation portal plugins tarball
-  ansible.builtin.get_url:
-    url: "{{ service_automation_url }}"
+- name: Download self-service automation portal plugins tarball from S3
+  amazon.aws.s3_object:
+    bucket: "{{ _s3_bucket }}"
+    object: "{{ _s3_object }}"
     dest: "{{ _plugin_temp_dir.path }}/plugins.tar.gz"
-    url_username: "{{ s3_rhpds_private_username | default(omit) }}"
-    url_password: "{{ s3_rhpds_private_password | default(omit) }}"
-    force_basic_auth: true
-    validate_certs: true
+    mode: get
+    aws_access_key: "{{ s3_aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ s3_aws_secret_key | default(omit) }}"
+    region: "{{ s3_rhpds_private_region | default('us-east-1') }}"
   register: _plugin_download
   when: service_automation_url is defined and service_automation_url | length > 0
 
