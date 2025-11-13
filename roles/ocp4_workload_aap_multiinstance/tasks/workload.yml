@@ -117,7 +117,8 @@
 - name: Wait for AAP Controller API to be ready (multi-user)
   when: ocp4_workload_aap_multiinstance_multi_user | bool
   ansible.builtin.uri:
-    url: "https://{{ item.route }}/api/v2/ping/"
+    # AAP 2.6: Use controller route for controller API endpoint
+    url: "https://{{ item.controller_route }}/api/v2/ping/"
     method: GET
     validate_certs: false
     status_code: 200
