@@ -1,17 +1,41 @@
-- name: Create OAuth2 application in AAP
-  awx.awx.application:
-    name: "{{ aap_oauth_client_name}}"
-    description: "Self Service application"
-    organization: "{{ aap_organization }}"
-    state: present
-    authorization_grant_type: authorization-code
-    client_type: confidential
-    redirect_uris:
-      - "{{ rhaap_redirect_url | default('https://placeholder.com') }}"
-    controller_host: "{{ controller_host }}"
-    controller_username: "{{ controller_username }}"
-    controller_password: "{{ controller_password }}"
-    validate_certs: "{{ controller_verify_ssl }}"
+# AAP 2.6 uses Gateway OAuth applications, not legacy controller OAuth
+# We need to create the OAuth app via the Gateway API using URI module
+
+- name: Get Default organization ID from Gateway
+  ansible.builtin.uri:
+    url: "{{ aap_controller_url }}/api/gateway/v1/organizations/?name={{ aap_organization }}"
+    method: GET
+    user: "{{ aap_admin_username }}"
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: yes
+    validate_certs: "{{ aap_ssl_verify }}"
+    status_code: 200
+  register: _org_response
+  tags: [create_oauth]
+
+- name: Set organization ID
+  ansible.builtin.set_fact:
+    _org_id: "{{ _org_response.json.results[0].id }}"
+  tags: [create_oauth]
+
+- name: Create OAuth2 application in AAP Gateway
+  ansible.builtin.uri:
+    url: "{{ aap_controller_url }}/api/gateway/v1/applications/"
+    method: POST
+    user: "{{ aap_admin_username }}"
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: yes
+    validate_certs: "{{ aap_ssl_verify }}"
+    body_format: json
+    body:
+      name: "{{ aap_oauth_client_name }}"
+      description: "Self Service Portal OAuth Application"
+      organization: "{{ _org_id }}"
+      client_type: "confidential"
+      authorization_grant_type: "authorization-code"
+      redirect_uris: "{{ rhaap_redirect_url }}"
+      algorithm: "RS256"
+    status_code: [200, 201]
   register: app_result
   tags: [create_oauth]
 

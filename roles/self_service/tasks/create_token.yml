@@ -1,21 +1,27 @@
 ---
-- name: Create AAP OAuth token
+# AAP 2.6 requires creating tokens via Gateway API for portal backend authentication
+- name: Create AAP Gateway personal access token
   tags: [create_token]
-  awx.awx.token:
-    description: "Developer Hub token"
-    scope: "write"
-    state: present
-    controller_host: "{{ controller_host }}"
-    controller_username: "{{ controller_username }}"
-    controller_password: "{{ controller_password }}"
-    validate_certs: "{{ controller_verify_ssl }}"
+  ansible.builtin.uri:
+    url: "{{ aap_controller_url }}/api/gateway/v1/tokens/"
+    method: POST
+    user: "{{ aap_admin_username }}"
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: yes
+    validate_certs: "{{ aap_ssl_verify }}"
+    body_format: json
+    body:
+      description: "Self Service Portal Backend Token"
+      scope: "read"
+    status_code: [200, 201]
   register: aap_token_result
 
 - name: Debug - Show full token result structure
   debug:
     var: aap_token_result
+  when: show_token | default(false)
 
 - name: Show AAP token value
   debug:
-    msg: "AAP token: {{ aap_token_result.ansible_facts.controller_token.token }}"
+    msg: "AAP token created: {{ aap_token_result.json.token[:30] }}..."
   when: show_token | default(false)
