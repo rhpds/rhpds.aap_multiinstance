@@ -1,7 +1,7 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # defaults file for self-service
-plugin_root_dir: "{{ role_path }}/files/plugins"
+plugin_root_dir: "/tmp/aap-ssap-plugins"
 helm_values: "{{ role_path }}/files/helm/values.yml"
 openshift_namespace: ssap
 helm_chart_version: "2.0.3"
