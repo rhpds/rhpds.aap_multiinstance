@@ -136,7 +136,9 @@
 
 - name: Build user access information
   ansible.builtin.set_fact:
-    _user_access_info: "{{ _user_access_info | default([]) + [{'user': item.item.user, 'namespace': item.item.namespace, 'route': (item.resources | selectattr('spec.to.name', 'search', 'controller') | list | first).spec.host if (item.resources | selectattr('spec.to.name', 'search', 'controller') | list | length > 0) else 'Not ready', 'password': _aap_user_passwords[item.item.namespace]}] }}"
+    # AAP 2.6: Use gateway route (unified AAP route), not controller-specific route
+    # The gateway route name matches the AAP instance name (without -controller, -eda, or -hub suffix)
+    _user_access_info: "{{ _user_access_info | default([]) + [{'user': item.item.user, 'namespace': item.item.namespace, 'route': (item.resources | selectattr('metadata.name', 'equalto', item.item.name) | list | first).spec.host if (item.resources | selectattr('metadata.name', 'equalto', item.item.name) | list | length > 0) else 'Not ready', 'password': _aap_user_passwords[item.item.namespace]}] }}"
   loop: "{{ r_routes.results }}"
   no_log: false
 

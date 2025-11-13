@@ -148,6 +148,8 @@ This can be verified/set via:
 - `roles/self_service/tasks/oauth.yml` - OAuth app creation via Gateway API
 - `roles/self_service/tasks/create_token.yml` - Token creation via Gateway API
 - `roles/self_service/tasks/oc_secrets.yml` - Use Gateway URL and Gateway API response format
+- `roles/ocp4_workload_aap_multiinstance/tasks/deploy_multiuser.yml` - Extract gateway route instead of controller route
+- `roles/ocp4_workload_aap_multiinstance/tasks/workload.yml` - Include portal URL in user info output
 
 ## References
 
