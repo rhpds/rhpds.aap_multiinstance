@@ -164,54 +164,12 @@
     label: "{{ item.user }}"
   when: ocp4_workload_aap_multiinstance_multi_user | bool
 
-# Wait for portal deployments to be ready (multi-user)
-- name: Wait for self-service portal deployment to be ready (multi-user)
+# Wait for portals to start up before showing URLs to users (multi-user)
+- name: Wait 2 minutes for self-service portals to become ready (multi-user)
   when: ocp4_workload_aap_multiinstance_multi_user | bool
-  kubernetes.core.k8s_info:
-    api_version: apps/v1
-    kind: Deployment
-    name: self-service-redhat-developer-hub
-    namespace: "{{ item.namespace }}-ssap"
-  register: _portal_deployment
-  until:
-    - _portal_deployment.resources | length > 0
-    - _portal_deployment.resources[0].status is defined
-    - _portal_deployment.resources[0].status.availableReplicas is defined
-    - _portal_deployment.resources[0].status.availableReplicas | int > 0
-  retries: 30
-  delay: 10
-  loop: "{{ _aap_multi_user_info }}"
-  loop_control:
-    label: "{{ item.user }}"
-  failed_when: false
-
-- name: Wait for portal routes to be accessible (multi-user)
-  when: ocp4_workload_aap_multiinstance_multi_user | bool
-  kubernetes.core.k8s_info:
-    api_version: route.openshift.io/v1
-    kind: Route
-    name: self-service-rhaap-portal
-    namespace: "{{ item.namespace }}-ssap"
-  register: _temp_portal_routes
-  loop: "{{ _aap_multi_user_info }}"
-  loop_control:
-    label: "{{ item.user }}"
-
-- name: Wait for portal HTTP endpoints to respond (multi-user)
-  when: ocp4_workload_aap_multiinstance_multi_user | bool
-  ansible.builtin.uri:
-    url: "https://{{ item.resources[0].spec.host }}"
-    method: GET
-    validate_certs: false
-    status_code: [200, 302, 303]
-  register: _portal_http_check
-  until: _portal_http_check.status in [200, 302, 303]
-  retries: 20
-  delay: 10
-  loop: "{{ _temp_portal_routes.results }}"
-  loop_control:
-    label: "{{ item.item.user }}"
-  failed_when: false
+  ansible.builtin.pause:
+    seconds: 120
+    prompt: "Waiting for self-service portals to start up..."
 
 # Wait for AAP Controller API to be ready (single instance)
 - name: Wait for AAP Controller API to be ready (single instance)
@@ -257,23 +215,12 @@
     helm_chart_version: "2.0.3"
   when: not ocp4_workload_aap_multiinstance_multi_user | bool
 
-# Wait for portal deployment to be ready (single instance)
-- name: Wait for self-service portal deployment to be ready (single instance)
+# Wait for portal to start up before showing URL to user (single instance)
+- name: Wait 2 minutes for self-service portal to become ready (single instance)
   when: not ocp4_workload_aap_multiinstance_multi_user | bool
-  kubernetes.core.k8s_info:
-    api_version: apps/v1
-    kind: Deployment
-    name: self-service-redhat-developer-hub
-    namespace: "{{ ocp4_workload_aap_multiinstance_namespace }}-ssap"
-  register: _portal_deployment_single
-  until:
-    - _portal_deployment_single.resources | length > 0
-    - _portal_deployment_single.resources[0].status is defined
-    - _portal_deployment_single.resources[0].status.availableReplicas is defined
-    - _portal_deployment_single.resources[0].status.availableReplicas | int > 0
-  retries: 30
-  delay: 10
-  failed_when: false
+  ansible.builtin.pause:
+    seconds: 120
+    prompt: "Waiting for self-service portal to start up..."
 
 - name: Get self-service portal route for single instance
   when: not ocp4_workload_aap_multiinstance_multi_user | bool
@@ -283,19 +230,6 @@
     name: self-service-rhaap-portal
     namespace: "{{ ocp4_workload_aap_multiinstance_namespace }}-ssap"
   register: _portal_route_single
-
-- name: Wait for portal HTTP endpoint to respond (single instance)
-  when: not ocp4_workload_aap_multiinstance_multi_user | bool
-  ansible.builtin.uri:
-    url: "https://{{ _portal_route_single.resources[0].spec.host }}"
-    method: GET
-    validate_certs: false
-    status_code: [200, 302, 303]
-  register: _portal_http_check_single
-  until: _portal_http_check_single.status in [200, 302, 303]
-  retries: 20
-  delay: 10
-  failed_when: false
 
 - name: Output user access information (single instance)
   when: not ocp4_workload_aap_multiinstance_multi_user | bool
