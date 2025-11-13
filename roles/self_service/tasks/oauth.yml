@@ -33,7 +33,8 @@
       organization: "{{ _org_id }}"
       client_type: "confidential"
       authorization_grant_type: "authorization-code"
-      redirect_uris: "{{ rhaap_redirect_url }}"
+      # Use placeholder redirect URL initially, will be updated after portal deployment
+      redirect_uris: "{{ rhaap_redirect_url | default('https://placeholder.com') }}"
       algorithm: "RS256"
     status_code: [200, 201]
   register: app_result
