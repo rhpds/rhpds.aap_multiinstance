@@ -29,6 +29,19 @@
   ansible.builtin.debug:
     var: _plugin_download
 
+- name: Verify downloaded file exists on controller
+  ansible.builtin.stat:
+    path: "{{ _plugin_temp_dir.path }}/plugins.tar.gz"
+  register: _downloaded_file
+  when: _plugin_download is not skipped
+
+- name: Show downloaded file info
+  ansible.builtin.debug:
+    msg: "Downloaded file: {{ _plugin_temp_dir.path }}/plugins.tar.gz ({{ (_downloaded_file.stat.size / 1024 / 1024) | round(2) }} MB)"
+  when:
+    - _plugin_download is not skipped
+    - _downloaded_file.stat.exists
+
 - name: Create plugins directory on bastion
   ansible.builtin.file:
     path: "{{ plugin_root_dir }}"
@@ -69,9 +82,9 @@
   delegate_to: bastion
   register: _plugin_files
 
-- name: Show downloaded plugin files
+- name: Show extracted plugin file names
   ansible.builtin.debug:
-    msg: "Found {{ _plugin_files.matched }} plugin files in {{ plugin_root_dir }}"
+    msg: "Found {{ _plugin_files.matched }} plugin files: {{ _plugin_files.files | map(attribute='path') | map('basename') | list }}"
 
 - name: Clean up temporary directory
   ansible.builtin.file:
