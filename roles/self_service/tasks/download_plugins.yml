@@ -25,6 +25,10 @@
   register: _plugin_download
   when: service_automation_url is defined and service_automation_url | length > 0
 
+- name: Debug plugin download result
+  ansible.builtin.debug:
+    var: _plugin_download
+
 - name: Create plugins directory on bastion
   ansible.builtin.file:
     path: "{{ plugin_root_dir }}"
@@ -34,10 +38,12 @@
 
 - name: Copy plugins tarball to bastion
   ansible.builtin.copy:
-    src: "{{ _plugin_download.dest }}"
+    src: "{{ _plugin_temp_dir.path }}/plugins.tar.gz"
     dest: "{{ plugin_root_dir }}/plugins.tar.gz"
   delegate_to: bastion
-  when: _plugin_download is defined and _plugin_download.dest is defined
+  when:
+    - _plugin_download is not skipped
+    - _plugin_temp_dir.path is defined
 
 - name: Extract plugins tarball on bastion
   ansible.builtin.unarchive:
@@ -45,7 +51,9 @@
     dest: "{{ plugin_root_dir }}"
     remote_src: true
   delegate_to: bastion
-  when: _plugin_download is defined and _plugin_download.dest is defined
+  when:
+    - _plugin_download is not skipped
+    - _plugin_temp_dir.path is defined
 
 - name: Remove tarball from bastion after extraction
   ansible.builtin.file:
