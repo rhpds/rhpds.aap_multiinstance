@@ -18,6 +18,18 @@
     _org_id: "{{ _org_response.json.results[0].id }}"
   tags: [create_oauth]
 
+- name: Check if OAuth2 application already exists
+  ansible.builtin.uri:
+    url: "{{ aap_controller_url }}/api/gateway/v1/applications/?name={{ aap_oauth_client_name | urlencode }}"
+    method: GET
+    user: "{{ aap_admin_username }}"
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: yes
+    validate_certs: "{{ aap_ssl_verify }}"
+    status_code: 200
+  register: _existing_app
+  tags: [create_oauth]
+
 - name: Create OAuth2 application in AAP Gateway
   ansible.builtin.uri:
     url: "{{ aap_controller_url }}/api/gateway/v1/applications/"
@@ -38,6 +50,14 @@
       algorithm: "RS256"
     status_code: [200, 201]
   register: app_result
+  when: _existing_app.json.results | length == 0
+  tags: [create_oauth]
+
+- name: Use existing OAuth2 application
+  ansible.builtin.set_fact:
+    app_result:
+      json: "{{ _existing_app.json.results[0] }}"
+  when: _existing_app.json.results | length > 0
   tags: [create_oauth]
 
 - name: Show OAuth2 application result
