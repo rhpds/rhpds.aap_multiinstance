@@ -15,7 +15,7 @@
       - "Instances: {{ _aap_instance_namespaces | map(attribute='name') | list }}"
       - "Namespaces: {{ _aap_instance_namespaces | map(attribute='namespace') | list }}"
 
-- name: Create namespaces for each user instance
+- name: Create AAP namespaces for each user instance
   kubernetes.core.k8s:
     state: present
     definition:
@@ -26,6 +26,20 @@
         labels:
           app: ansible-automation-platform
           instance: "{{ item.name }}"
+          deployment-mode: multi-user
+  loop: "{{ _aap_instance_namespaces }}"
+
+- name: Create self-service portal namespaces for each user
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}-ssap"
+        labels:
+          app: self-service-portal
+          aap-namespace: "{{ item.namespace }}"
           deployment-mode: multi-user
   loop: "{{ _aap_instance_namespaces }}"
 
