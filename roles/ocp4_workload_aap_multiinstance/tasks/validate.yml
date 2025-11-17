@@ -23,8 +23,8 @@
   ansible.builtin.assert:
     that:
       - aap_instance_num_users | int > 1
-      - aap_instance_num_users | int <= 50
-    fail_msg: "num_users must be between 2 and 50 for multi-user mode"
+      - aap_instance_num_users | int <= 100
+    fail_msg: "num_users must be between 2 and 100 for multi-user mode"
     success_msg: "Multi-user configuration is valid ({{ aap_instance_num_users }} users)"
 
 - name: Display deployment configuration
