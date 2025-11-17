@@ -131,34 +131,51 @@
     name: "{{ item.name }}"
     namespace: "{{ item.namespace }}"
   register: r_aap_instances
-  until:
-    - r_aap_instances.resources | length > 0
-    - r_aap_instances.resources[0].status.conditions is defined
-    - r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | list | length > 0
-    - (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | first).status == "True"
+  until: >-
+    (r_aap_instances.resources | length > 0) and
+    (r_aap_instances.resources[0].status.conditions is defined) and
+    (
+      (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | list | length > 0 and
+       (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | first).status == "True") or
+      (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Failure') | list | length > 0 and
+       (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Failure') | first).status == "True")
+    )
   retries: 120
   delay: 30
   loop: "{{ _aap_instance_namespaces }}"
   ignore_errors: true
 
-- name: Debug failed AAP instances
-  when: r_aap_instances.results | selectattr('failed', 'defined') | selectattr('failed', 'equalto', true) | list | length > 0
+- name: Check for failed AAP instances
+  when: r_aap_instances.results is defined
   block:
+    - name: Identify instances with failure conditions
+      ansible.builtin.set_fact:
+        _failed_aap_instances: >-
+          {{
+            r_aap_instances.results |
+            selectattr('resources', 'defined') |
+            selectattr('resources', 'length', 1) |
+            selectattr('resources.0.status.conditions', 'defined') |
+            selectattr('resources.0.status.conditions', 'search', 'Failure.*True') |
+            list
+          }}
+
     - name: Show status of failed AAP instances
+      when: _failed_aap_instances | length > 0
       ansible.builtin.debug:
         msg:
           - "AAP Instance: {{ item.item.name }}"
           - "Namespace: {{ item.item.namespace }}"
           - "Status: {{ item.resources[0].status | default('No status available') }}"
           - "Conditions: {{ item.resources[0].status.conditions | default([]) }}"
-      loop: "{{ r_aap_instances.results }}"
-      when: item.failed | default(false)
+      loop: "{{ _failed_aap_instances }}"
       loop_control:
         label: "{{ item.item.name }}"
 
-    - name: Fail if any AAP instances did not become ready
+    - name: Fail if any AAP instances have failure conditions
+      when: _failed_aap_instances | length > 0
       ansible.builtin.fail:
-        msg: "One or more AAP instances failed to deploy. Check the debug output above for details."
+        msg: "{{ _failed_aap_instances | length }} AAP instance(s) failed to deploy. Check the debug output above for details."
 
 - name: Get routes for all users
   kubernetes.core.k8s_info:
