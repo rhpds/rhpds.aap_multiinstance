@@ -55,6 +55,21 @@
     _controller_url: "{{ r_aap_instance.resources[0].status.URL | default('') }}"
     _controller_hostname: "{{ r_aap_instance.resources[0].status.URL | default('') | urlsplit('hostname') }}"
 
+# -------------------------------------------------------------------
+# Create self-service portal namespace
+# -------------------------------------------------------------------
+- name: Create self-service portal namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ _instance_namespace }}-ssap"
+        labels:
+          app: self-service-portal
+          aap-namespace: "{{ _instance_namespace }}"
+
 - name: Inject manifest into AAP instance
   when:
     - aap_instance_inject_manifest | bool

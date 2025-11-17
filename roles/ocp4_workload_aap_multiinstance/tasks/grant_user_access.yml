@@ -24,12 +24,35 @@
   loop_control:
     label: "{{ item.user }} -> {{ item.namespace }}"
 
+- name: Grant users admin role in their self-service portal namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: "{{ item.user }}-{{ ocp4_workload_aap_multiinstance_user_role }}"
+        namespace: "{{ item.namespace }}-ssap"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: "{{ ocp4_workload_aap_multiinstance_user_role }}"
+      subjects:
+        - kind: User
+          name: "{{ item.user }}"
+          apiGroup: rbac.authorization.k8s.io
+  loop: "{{ _aap_multi_user_info }}"
+  loop_control:
+    label: "{{ item.user }} -> {{ item.namespace }}-ssap"
+
 - name: Print user access summary
   ansible.builtin.debug:
     msg:
       - "User RBAC configured successfully"
       - "Users granted '{{ ocp4_workload_aap_multiinstance_user_role }}' role in their AAP namespaces"
-      - "Users can access their namespaces with: oc project {{ item.namespace }}"
+      - "Users granted '{{ ocp4_workload_aap_multiinstance_user_role }}' role in their portal namespaces"
+      - "AAP namespace: {{ item.namespace }}"
+      - "Portal namespace: {{ item.namespace }}-ssap"
   loop: "{{ _aap_multi_user_info }}"
   loop_control:
     label: "{{ item.user }}"
