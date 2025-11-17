@@ -124,72 +124,21 @@
     instance_namespace: "{{ item.namespace }}"
   loop: "{{ _aap_instance_namespaces }}"
 
-- name: Wait for all AAP instances to complete (success or failure)
+- name: Wait for all AAP instances to be ready (parallel)
   kubernetes.core.k8s_info:
     api_version: aap.ansible.com/v1alpha1
     kind: AnsibleAutomationPlatform
     name: "{{ item.name }}"
     namespace: "{{ item.namespace }}"
   register: r_aap_instances
-  until: >-
-    (r_aap_instances.resources | length > 0) and
-    (r_aap_instances.resources[0].status.conditions is defined) and
-    (
-      (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | list | length > 0 and
-       (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | first).status == "True") or
-      (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Failure') | list | length > 0 and
-       (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Failure') | first).status == "True")
-    )
+  until:
+    - r_aap_instances.resources | length > 0
+    - r_aap_instances.resources[0].status.conditions is defined
+    - r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | list | length > 0
+    - (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | first).status == "True"
   retries: 120
   delay: 30
   loop: "{{ _aap_instance_namespaces }}"
-  failed_when: false
-
-- name: Identify successful and failed AAP instances
-  ansible.builtin.set_fact:
-    _successful_aap_instances: >-
-      {{
-        r_aap_instances.results |
-        selectattr('resources', 'defined') |
-        select('length', 'gt', 0) |
-        selectattr('resources.0.status.conditions', 'defined') |
-        select('search', 'Successful.*True') |
-        list
-      }}
-    _failed_aap_instances: >-
-      {{
-        r_aap_instances.results |
-        selectattr('resources', 'defined') |
-        select('length', 'gt', 0) |
-        selectattr('resources.0.status.conditions', 'defined') |
-        select('search', 'Failure.*True') |
-        list
-      }}
-
-- name: Display deployment summary
-  ansible.builtin.debug:
-    msg:
-      - "AAP Instance Deployment Summary:"
-      - "  Successful: {{ _successful_aap_instances | length }}"
-      - "  Failed: {{ _failed_aap_instances | length }}"
-      - "  Total: {{ _aap_instance_namespaces | length }}"
-
-- name: Show details of failed AAP instances
-  when: _failed_aap_instances | length > 0
-  ansible.builtin.debug:
-    msg:
-      - "Failed AAP Instance: {{ item.item.name }}"
-      - "Namespace: {{ item.item.namespace }}"
-      - "Status: {{ item.resources[0].status | to_nice_json }}"
-    verbosity: 0
-  loop: "{{ _failed_aap_instances }}"
-  loop_control:
-    label: "{{ item.item.name }}"
-
-- name: Fail deployment if any AAP instances failed
-  when: _failed_aap_instances | length > 0
-  ansible.builtin.fail:
-    msg: "{{ _failed_aap_instances | length }} out of {{ _aap_instance_namespaces | length }} AAP instance(s) failed to deploy. Check debug output above for details."
 
 - name: Get routes for all users
   kubernetes.core.k8s_info:
