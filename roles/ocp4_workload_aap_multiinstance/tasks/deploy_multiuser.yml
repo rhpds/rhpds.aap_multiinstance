@@ -115,6 +115,20 @@
   loop: "{{ _aap_instance_namespaces }}"
   no_log: "{{ aap_instance_no_log }}"
 
+- name: Calculate wait parameters based on user count
+  ansible.builtin.set_fact:
+    # 1-10 users: 120 retries x 30s = 60 min
+    # 11-20 users: 180 retries x 45s = 135 min
+    # 21+ users: 240 retries x 60s = 240 min
+    _aap_wait_retries: "{{ 120 if aap_instance_num_users | int <= 10 else (180 if aap_instance_num_users | int <= 20 else 240) }}"
+    _aap_wait_delay: "{{ 30 if aap_instance_num_users | int <= 10 else (45 if aap_instance_num_users | int <= 20 else 60) }}"
+
+- name: Display deployment timing
+  ansible.builtin.debug:
+    msg:
+      - "Deploying {{ aap_instance_num_users }} AAP instances in parallel"
+      - "Wait timeout: {{ (_aap_wait_retries | int * _aap_wait_delay | int / 60) | int }} minutes ({{ _aap_wait_retries }} retries x {{ _aap_wait_delay }}s)"
+
 - name: Deploy AAP instances for all users (parallel)
   kubernetes.core.k8s:
     state: present
@@ -138,8 +152,8 @@
     - r_aap_instances.resources[0].status.conditions is defined
     - r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | list | length > 0
     - (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | first).status == "True"
-  retries: 120
-  delay: 30
+  retries: "{{ _aap_wait_retries | int }}"
+  delay: "{{ _aap_wait_delay | int }}"
   loop: "{{ _aap_instance_namespaces }}"
   loop_control:
     label: "{{ item.name }}"
