@@ -1,0 +1,63 @@
+---
+# Deploy a batch of AAP instances
+# Variables expected:
+#   batch_index: Current batch number (0-based)
+#   _aap_instance_namespaces: Full list of instances to deploy
+#   ocp4_workload_aap_multiinstance_batch_size: Number of instances per batch
+
+- name: Calculate batch start and end indices
+  ansible.builtin.set_fact:
+    _batch_start: "{{ batch_index | int * ocp4_workload_aap_multiinstance_batch_size | int }}"
+    _batch_end: "{{ [((batch_index | int + 1) * ocp4_workload_aap_multiinstance_batch_size | int), (_aap_instance_namespaces | length)] | min }}"
+
+- name: Get instances for this batch
+  ansible.builtin.set_fact:
+    _batch_instances: "{{ _aap_instance_namespaces[_batch_start | int:_batch_end | int] }}"
+
+- name: Display batch info
+  ansible.builtin.debug:
+    msg:
+      - "Processing batch {{ batch_index | int + 1 }}"
+      - "Deploying users: {{ _batch_instances | map(attribute='user') | list | join(', ') }}"
+      - "Instance count: {{ _batch_instances | length }}"
+
+- name: Deploy AAP instances for batch
+  kubernetes.core.k8s:
+    state: present
+    template: aap_instance.yaml.j2
+  vars:
+    instance_name: "{{ item.name }}"
+    instance_namespace: "{{ item.namespace }}"
+  loop: "{{ _batch_instances }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Wait for batch AAP instances to be ready
+  kubernetes.core.k8s_info:
+    api_version: aap.ansible.com/v1alpha1
+    kind: AnsibleAutomationPlatform
+    name: "{{ item.name }}"
+    namespace: "{{ item.namespace }}"
+  register: r_batch_instances
+  until:
+    - r_batch_instances.resources | length > 0
+    - r_batch_instances.resources[0].status.conditions is defined
+    - r_batch_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | list | length > 0
+    - (r_batch_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | first).status == "True"
+  retries: 120
+  delay: 30
+  loop: "{{ _batch_instances }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Display batch completion
+  ansible.builtin.debug:
+    msg:
+      - "Batch {{ batch_index | int + 1 }} completed successfully"
+      - "Deployed: {{ _batch_instances | map(attribute='user') | list | join(', ') }}"
+
+- name: Wait between batches (if not last batch)
+  when: (batch_index | int + 1) < (_num_batches | int)
+  ansible.builtin.pause:
+    seconds: "{{ ocp4_workload_aap_multiinstance_batch_delay }}"
+    prompt: "Waiting {{ ocp4_workload_aap_multiinstance_batch_delay }}s before next batch..."

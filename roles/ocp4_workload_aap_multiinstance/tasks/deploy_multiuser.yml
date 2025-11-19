@@ -115,30 +115,24 @@
   loop: "{{ _aap_instance_namespaces }}"
   no_log: "{{ aap_instance_no_log }}"
 
-- name: Deploy AAP instances for all users (parallel)
-  kubernetes.core.k8s:
-    state: present
-    template: aap_instance.yaml.j2
-  vars:
-    instance_name: "{{ item.name }}"
-    instance_namespace: "{{ item.namespace }}"
-  loop: "{{ _aap_instance_namespaces }}"
+- name: Calculate number of batches needed
+  ansible.builtin.set_fact:
+    _num_batches: "{{ ((aap_instance_num_users | int / ocp4_workload_aap_multiinstance_batch_size | int) | round(0, 'ceil')) | int }}"
 
-- name: Wait for all AAP instances to be ready (parallel)
-  kubernetes.core.k8s_info:
-    api_version: aap.ansible.com/v1alpha1
-    kind: AnsibleAutomationPlatform
-    name: "{{ item.name }}"
-    namespace: "{{ item.namespace }}"
-  register: r_aap_instances
-  until:
-    - r_aap_instances.resources | length > 0
-    - r_aap_instances.resources[0].status.conditions is defined
-    - r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | list | length > 0
-    - (r_aap_instances.resources[0].status.conditions | selectattr('type', 'equalto', 'Successful') | first).status == "True"
-  retries: 120
-  delay: 30
-  loop: "{{ _aap_instance_namespaces }}"
+- name: Display batch deployment plan
+  ansible.builtin.debug:
+    msg:
+      - "Deploying {{ aap_instance_num_users }} AAP instances in batches"
+      - "Batch size: {{ ocp4_workload_aap_multiinstance_batch_size }}"
+      - "Total batches: {{ _num_batches }}"
+      - "Delay between batches: {{ ocp4_workload_aap_multiinstance_batch_delay }}s"
+
+- name: Deploy AAP instances in batches
+  include_tasks: deploy_batch.yml
+  loop: "{{ range(0, _num_batches | int) | list }}"
+  loop_control:
+    loop_var: batch_index
+    label: "Batch {{ batch_index + 1 }} of {{ _num_batches }}"
 
 - name: Get routes for all users
   kubernetes.core.k8s_info:

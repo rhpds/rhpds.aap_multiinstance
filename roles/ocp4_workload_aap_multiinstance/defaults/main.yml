@@ -24,6 +24,11 @@ ocp4_workload_aap_multiinstance_user_prefix: "user"
 # User password from RHDP common_password
 ocp4_workload_aap_multiinstance_user_password: "{{ common_password | default('openshift') }}"
 
+# Batch deployment settings for large-scale deployments
+# Deploy AAP instances in batches to avoid overwhelming the cluster
+ocp4_workload_aap_multiinstance_batch_size: 10
+ocp4_workload_aap_multiinstance_batch_delay: 60  # seconds between batches
+
 # ---------------------------------------------------------------
 # AAP Version and Operator Settings
 # ---------------------------------------------------------------
