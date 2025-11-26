@@ -20,7 +20,6 @@ galaxy_info:
     - selfservice
 
 collections:
-  - ansible.controller
   - kubernetes.core
 
 dependencies: []

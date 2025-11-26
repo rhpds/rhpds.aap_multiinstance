@@ -19,7 +19,6 @@ tags:
   - rhdp
 dependencies:
   kubernetes.core: ">=2.3.0"
-  ansible.controller: ">=4.5.0"
 repository: https://github.com/rhpds/rhpds.aap_self_service_portal
 documentation: https://github.com/rhpds/rhpds.aap_self_service_portal
 homepage: https://github.com/rhpds/rhpds.aap_self_service_portal
