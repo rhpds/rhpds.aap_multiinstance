@@ -19,9 +19,10 @@
 # -------------------------------------------------------------------
 # Validate AAP Connectivity
 # -------------------------------------------------------------------
+# AAP 2.6: Use gateway API endpoint for health check
 - name: Test AAP API connectivity
   ansible.builtin.uri:
-    url: "{{ aap_selfservice_custom_controller_url }}/api/v2/ping/"
+    url: "{{ aap_selfservice_custom_controller_url }}/api/gateway/v1/"
     method: GET
     user: "{{ aap_selfservice_custom_admin_username }}"
     password: "{{ aap_selfservice_custom_admin_password }}"
@@ -35,7 +36,7 @@
 
 - name: Display AAP connectivity success
   ansible.builtin.debug:
-    msg: "AAP API is responding successfully"
+    msg: "AAP Gateway API is responding successfully"
 
 # -------------------------------------------------------------------
 # Create Demo Content in Order
