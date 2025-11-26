@@ -86,13 +86,14 @@
     - name: Configure each AAP instance with demo content
       ansible.builtin.include_tasks: setup_instance_content.yml
       vars:
-        aap_selfservice_custom_controller_url: "https://{{ item.route }}"
+        aap_selfservice_custom_controller_url: "https://{{ aap_instance.route }}"
         aap_selfservice_custom_admin_username: "{{ _aap_common_admin_username }}"
-        aap_selfservice_custom_admin_password: "{{ item.password }}"
-        instance_label: "{{ item.user }}"
+        aap_selfservice_custom_admin_password: "{{ aap_instance.password }}"
+        instance_label: "{{ aap_instance.user }}"
       loop: "{{ _aap_instances }}"
       loop_control:
-        label: "{{ item.user }} - {{ item.route }}"
+        loop_var: aap_instance
+        label: "{{ aap_instance.user }} - {{ aap_instance.route }}"
 
 # -------------------------------------------------------------------
 # Summary
