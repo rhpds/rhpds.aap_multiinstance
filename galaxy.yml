@@ -2,7 +2,7 @@
 ---
 namespace: rhpds
 name: aap_self_service_portal
-version: 1.0.0
+version: 1.1.0
 readme: README.md
 authors:
   - Hicham Mourad <hmourad@redhat.com>
@@ -19,6 +19,7 @@ tags:
   - rhdp
 dependencies:
   kubernetes.core: ">=2.3.0"
+  ansible.controller: ">=4.5.0"
 repository: https://github.com/rhpds/rhpds.aap_self_service_portal
 documentation: https://github.com/rhpds/rhpds.aap_self_service_portal
 homepage: https://github.com/rhpds/rhpds.aap_self_service_portal

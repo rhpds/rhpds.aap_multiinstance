@@ -244,6 +244,7 @@
       aap_admin_username: "{{ _aap_deployment_info.admin_username }}"
       aap_admin_password: "{{ _aap_deployment_info.admin_password }}"
       self_service_portal_url: "https://{{ _portal_route_single.resources[0].spec.host }}"
+      aap_multi_user_mode: false
 
 - name: Get self-service portal routes for user info
   when: ocp4_workload_aap_multiinstance_multi_user | bool
@@ -280,3 +281,11 @@
   loop: "{{ _portal_routes.results }}"
   loop_control:
     label: "{{ item.item.user }}"
+
+- name: Save multi-user instances data for downstream workloads
+  when: ocp4_workload_aap_multiinstance_multi_user | bool
+  agnosticd.core.agnosticd_user_info:
+    data:
+      aap_multi_user_mode: true
+      aap_instances: "{{ _aap_multi_user_info }}"
+      aap_admin_username: "{{ ocp4_workload_aap_multiinstance_admin_username }}"

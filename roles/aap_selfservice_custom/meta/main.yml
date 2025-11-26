@@ -1,0 +1,26 @@
+---
+# SPDX-License-Identifier: MIT-0
+galaxy_info:
+  author: Prakhar Srivastava
+  description: Configure AAP with custom users, inventories, credentials, and job templates for self-service demos
+  company: Red Hat
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+
+  galaxy_tags:
+    - ansible
+    - aap
+    - automation
+    - controller
+    - selfservice
+
+collections:
+  - ansible.controller
+  - kubernetes.core
+
+dependencies: []

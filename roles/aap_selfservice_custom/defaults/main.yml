@@ -1,0 +1,314 @@
+---
+# SPDX-License-Identifier: MIT-0
+# ===================================================================
+# AAP Self-Service Custom Content Role
+# ===================================================================
+# Configures AAP instances with demo users, inventories, credentials,
+# projects, and job templates for self-service portal demonstrations
+#
+# Maintainer: Hicham Mourad <hmourad@redhat.com>
+# Source: https://github.com/ansible-tmm/ssap-lab
+
+# -------------------------------------------------------------------
+# AAP Controller Connection Settings
+# -------------------------------------------------------------------
+# These will be populated from agnosticd_user_data lookup plugin
+aap_selfservice_custom_controller_url: ""
+aap_selfservice_custom_admin_username: "admin"
+aap_selfservice_custom_admin_password: ""
+aap_selfservice_custom_organization: "Default"
+aap_selfservice_custom_verify_ssl: false
+
+# User password for demo accounts
+# Will use common_password from workshop deployment
+aap_selfservice_custom_user_password: "{{ common_password | default('ansible123!') }}"
+
+# -------------------------------------------------------------------
+# Demo Users Configuration
+# -------------------------------------------------------------------
+aap_selfservice_custom_users:
+  - username: clouduser1
+    password: "{{ aap_selfservice_custom_user_password }}"
+    email: clouduser1@example.org
+    first_name: Cloud
+    last_name: CloudUser1
+
+  - username: networkuser1
+    password: "{{ aap_selfservice_custom_user_password }}"
+    email: networkuser1@example.org
+    first_name: Network
+    last_name: NetworkUser1
+
+  - username: rheluser1
+    password: "{{ aap_selfservice_custom_user_password }}"
+    email: rheluser1@example.org
+    first_name: RHEL
+    last_name: RHELUser1
+
+# -------------------------------------------------------------------
+# Demo Inventories Configuration
+# -------------------------------------------------------------------
+aap_selfservice_custom_inventories:
+  - name: AWS Inventory
+    organization: Default
+
+  - name: Azure Inventory
+    organization: Default
+
+  - name: GCP Inventory
+    organization: Default
+
+  - name: RHEL Inventory
+    organization: Default
+
+  - name: Network Inventory
+    organization: Default
+
+# -------------------------------------------------------------------
+# Demo Credentials Configuration
+# -------------------------------------------------------------------
+# NOTE: These are placeholder credentials for CNV/demo environments
+# In production, use proper credential management
+aap_selfservice_custom_credentials:
+  - name: AWS Credentials
+    description: Amazon Web Services
+    organization: Default
+    credential_type: Amazon Web Services
+    inputs:
+      username: "blahblahblahAWSACCESSKEYID"
+      password: "blahblahlahAWSSECRETACCESSKEY"
+
+  - name: Azure Credentials
+    description: Microsoft Azure
+    organization: Default
+    credential_type: Microsoft Azure Resource Manager
+    inputs:
+      subscription: "blahblahblahSUBSCRIPTIONID"
+
+  - name: RHEL - SSH Credentials
+    description: SSH credentials for RHEL systems
+    organization: Default
+    credential_type: Machine
+    inputs: {}
+
+  - name: Network Credentials
+    description: Network device credentials
+    organization: Default
+    credential_type: Machine
+    inputs: {}
+
+# -------------------------------------------------------------------
+# Demo Projects Configuration
+# -------------------------------------------------------------------
+aap_selfservice_custom_projects:
+  - name: SelfService Demo playbooks
+    description: This is a project for the self-service portal demos
+    organization: Default
+    scm_type: git
+    scm_url: https://github.com/ansible-tmm/ssap-lab
+    scm_branch: main
+    default_environment: Default execution environment
+
+# -------------------------------------------------------------------
+# Demo Labels Configuration
+# -------------------------------------------------------------------
+aap_selfservice_custom_labels:
+  - name: aws
+    organization: Default
+
+  - name: rhel
+    organization: Default
+
+  - name: network
+    organization: Default
+
+  - name: custom
+    organization: Default
+
+# -------------------------------------------------------------------
+# Demo Job Templates Configuration
+# -------------------------------------------------------------------
+aap_selfservice_custom_job_templates:
+  # AWS Job Templates
+  - name: Cloud/AWS AWS Provisioning Workflow
+    description: AWS provisioning workflow template
+    job_type: run
+    organization: Default
+    inventory: AWS Inventory
+    project: SelfService Demo playbooks
+    playbook: New AWS Provisioning Workflow.yml
+    credentials:
+      - AWS Credentials
+    labels:
+      - aws
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
+
+  - name: Cloud/AWS Create RHEL10 instance
+    job_type: run
+    organization: Default
+    inventory: AWS Inventory
+    project: SelfService Demo playbooks
+    playbook: create_aws_ec2_rhel10.yml
+    credentials:
+      - AWS Credentials
+    labels:
+      - aws
+      - rhel
+
+  - name: Cloud/AWS Create RHEL9 instance
+    job_type: run
+    organization: Default
+    inventory: AWS Inventory
+    project: SelfService Demo playbooks
+    playbook: create_aws_ec2_rhel9.yml
+    credentials:
+      - AWS Credentials
+    labels:
+      - aws
+      - rhel
+
+  - name: Cloud/AWS Create VCP
+    job_type: run
+    organization: Default
+    inventory: AWS Inventory
+    project: SelfService Demo playbooks
+    playbook: create_aws_vpc.yml
+    credentials:
+      - AWS Credentials
+    labels:
+      - aws
+
+  - name: Cloud/AWS Snapshot ec2 instance
+    job_type: run
+    organization: Default
+    inventory: AWS Inventory
+    project: SelfService Demo playbooks
+    playbook: snapshot_aws_ec2.yml
+    credentials:
+      - AWS Credentials
+    labels:
+      - aws
+
+  # Network Job Templates
+  - name: Network/Backup Network Device
+    job_type: run
+    organization: Default
+    inventory: Network Inventory
+    project: SelfService Demo playbooks
+    playbook: network_backup_device.yml
+    credentials:
+      - Network Credentials
+    labels:
+      - network
+
+  - name: Network/Deploy Network device configuration
+    job_type: run
+    organization: Default
+    inventory: Network Inventory
+    project: SelfService Demo playbooks
+    playbook: network_deploy_configuration.yml
+    credentials:
+      - Network Credentials
+    labels:
+      - network
+
+  - name: Network/Onboard Network device
+    job_type: run
+    organization: Default
+    inventory: Network Inventory
+    project: SelfService Demo playbooks
+    playbook: network_device_onboard.yml
+    credentials:
+      - Network Credentials
+    labels:
+      - network
+
+  - name: Network/Restore Network device
+    job_type: run
+    organization: Default
+    inventory: Network Inventory
+    project: SelfService Demo playbooks
+    playbook: network_restore_device.yml
+    credentials:
+      - Network Credentials
+    labels:
+      - network
+
+  # RHEL Job Templates
+  - name: Linux/RHEL Deploy Applications to RHEL
+    job_type: run
+    organization: Default
+    inventory: RHEL Inventory
+    project: SelfService Demo playbooks
+    playbook: deploy_application_to_rhel.yml
+    credentials:
+      - RHEL - SSH Credentials
+    labels:
+      - rhel
+
+  - name: Linux/RHEL Install NGINX on RHEL
+    job_type: run
+    organization: Default
+    inventory: RHEL Inventory
+    project: SelfService Demo playbooks
+    playbook: install_nginx.yml
+    credentials:
+      - RHEL - SSH Credentials
+    labels:
+      - rhel
+
+  - name: Linux/RHEL Patch RHEL Servers
+    job_type: run
+    organization: Default
+    inventory: RHEL Inventory
+    project: SelfService Demo playbooks
+    playbook: patch_rhel_servers.yml
+    credentials:
+      - RHEL - SSH Credentials
+    labels:
+      - rhel
+
+  - name: Linux/RHEL START Service on RHEL
+    job_type: run
+    organization: Default
+    inventory: RHEL Inventory
+    project: SelfService Demo playbooks
+    playbook: start_rhel_service.yml
+    credentials:
+      - RHEL - SSH Credentials
+    labels:
+      - rhel
+
+  - name: Linux/RHEL STOP Service on RHEL
+    job_type: run
+    organization: Default
+    inventory: RHEL Inventory
+    project: SelfService Demo playbooks
+    playbook: stop_rhel_service.yml
+    credentials:
+      - RHEL - SSH Credentials
+    labels:
+      - rhel
+
+  - name: RHEL / Update RHEL Time Servers
+    description: The Imported CUSTOM template in Self-Service portal will point to this job template
+    job_type: run
+    organization: Default
+    inventory: RHEL Inventory
+    project: SelfService Demo playbooks
+    playbook: update_rhel_time_server.yml
+    credentials:
+      - RHEL - SSH Credentials
+    labels:
+      - rhel
+      - custom
+
+# -------------------------------------------------------------------
+# Behavior Settings
+# -------------------------------------------------------------------
+# Skip resources that already exist (idempotent)
+aap_selfservice_custom_skip_existing: true
+
+# Enable debug output
+aap_selfservice_custom_debug: false

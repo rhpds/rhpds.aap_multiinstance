@@ -1,0 +1,70 @@
+---
+# SPDX-License-Identifier: MIT-0
+# ===================================================================
+# Setup Demo Content for Single AAP Instance
+# ===================================================================
+# Variables expected:
+#   aap_selfservice_custom_controller_url: AAP controller URL
+#   aap_selfservice_custom_admin_username: Admin username
+#   aap_selfservice_custom_admin_password: Admin password
+#   instance_label: Human-readable label for logging
+
+- name: Display instance configuration start
+  ansible.builtin.debug:
+    msg:
+      - "Configuring AAP instance: {{ instance_label }}"
+      - "Controller URL: {{ aap_selfservice_custom_controller_url }}"
+      - "Admin Username: {{ aap_selfservice_custom_admin_username }}"
+
+# -------------------------------------------------------------------
+# Validate AAP Connectivity
+# -------------------------------------------------------------------
+- name: Test AAP API connectivity
+  ansible.builtin.uri:
+    url: "{{ aap_selfservice_custom_controller_url }}/api/v2/ping/"
+    method: GET
+    user: "{{ aap_selfservice_custom_admin_username }}"
+    password: "{{ aap_selfservice_custom_admin_password }}"
+    force_basic_auth: true
+    validate_certs: "{{ aap_selfservice_custom_verify_ssl }}"
+    status_code: 200
+  register: _aap_ping_result
+  retries: 5
+  delay: 10
+  until: _aap_ping_result is succeeded
+
+- name: Display AAP connectivity success
+  ansible.builtin.debug:
+    msg: "AAP API is responding successfully"
+
+# -------------------------------------------------------------------
+# Create Demo Content in Order
+# -------------------------------------------------------------------
+# Order matters: users → inventories → credentials → labels → projects → job templates
+
+- name: Create demo users
+  ansible.builtin.include_tasks: setup_users.yml
+
+- name: Create demo inventories
+  ansible.builtin.include_tasks: setup_inventories.yml
+
+- name: Create demo credentials
+  ansible.builtin.include_tasks: setup_credentials.yml
+
+- name: Create demo labels
+  ansible.builtin.include_tasks: setup_labels.yml
+
+- name: Create demo projects
+  ansible.builtin.include_tasks: setup_projects.yml
+
+- name: Wait for project sync to complete
+  ansible.builtin.pause:
+    seconds: 30
+    prompt: "Waiting for project SCM sync to complete..."
+
+- name: Create demo job templates
+  ansible.builtin.include_tasks: setup_job_templates.yml
+
+- name: Display instance configuration complete
+  ansible.builtin.debug:
+    msg: "Demo content configuration complete for {{ instance_label }}"
