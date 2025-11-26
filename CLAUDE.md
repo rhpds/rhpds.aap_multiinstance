@@ -177,3 +177,146 @@ Ensure portal uses gateway route, not controller route.
 - `roles/self_service/tasks/oc_secrets.yml` - Gateway route config
 - `roles/ocp4_workload_aap_multiinstance/tasks/deploy_multiuser.yml` - Dual route extraction
 - `AAP_26_GATEWAY_CHANGES.md` - Detailed documentation
+
+## AAP Self-Service Custom Content Role
+
+### Overview
+
+The `aap_selfservice_custom` role automatically configures demo content in AAP instances after deployment. Based on Hicham's playbook from https://github.com/ansible-tmm/ssap-lab.
+
+**Location:** `roles/aap_selfservice_custom/`
+**Maintainer:** Hicham Mourad <hmourad@redhat.com>
+**Collection Version:** 1.1.0+
+
+### What It Does
+
+Configures each AAP instance with:
+- **3 demo users:** clouduser1, networkuser1, rheluser1 (using workshop `common_password`)
+- **5 inventories:** AWS, Azure, GCP, RHEL, Network
+- **5 credentials:** Placeholder values for CNV/demo environments
+- **1 SCM project:** ansible-tmm/ssap-lab (main branch)
+- **4 labels:** aws, rhel, network, custom
+- **15 job templates:** 5 AWS + 4 Network + 6 RHEL
+
+### Architecture
+
+**Data Flow:**
+1. `ocp4_workload_aap_multiinstance` saves AAP instance data via `agnosticd_user_info`
+2. `aap_selfservice_custom` retrieves data via `lookup('agnosticd_user_data')`
+3. Role loops through all AAP instances (multi-user mode) or configures single instance
+
+**Key Technical Details:**
+- Uses `ansible.controller` collection modules (available in execution environment)
+- Connects via **Gateway route** (AAP 2.6 architecture)
+- Health check endpoint: `/api/gateway/v1/` (not `/api/v2/ping/`)
+- Idempotent: safe to re-run, skips existing resources
+- Loop variable: `aap_instance` (avoids collision with inner loops)
+
+### Important Fixes Applied
+
+#### Fix 1: Gateway API Health Check
+**Problem:** Used `/api/v2/ping/` which returns 404 on gateway route
+**Solution:** Changed to `/api/gateway/v1/` for AAP 2.6 compatibility
+```yaml
+# roles/aap_selfservice_custom/tasks/setup_instance_content.yml:25
+url: "{{ aap_selfservice_custom_controller_url }}/api/gateway/v1/"
+```
+
+#### Fix 2: Loop Variable Collision
+**Problem:** Outer loop used `item`, inner loops also used `item`, causing template resolution errors
+**Solution:** Added `loop_var: aap_instance` to outer loop
+```yaml
+# roles/aap_selfservice_custom/tasks/main.yml:94-95
+loop_control:
+  loop_var: aap_instance
+  label: "{{ aap_instance.user }} - {{ aap_instance.route }}"
+```
+
+#### Fix 3: Manifest Injection Certificate Validation
+**Problem:** `validate_certs: true` failed in CNV with self-signed certs
+**Solution:** Changed to `validate_certs: false` in inject_manifest.yml
+```yaml
+# roles/ocp4_workload_aap_multiinstance/tasks/inject_manifest.yml:29,42
+validate_certs: false
+```
+
+### Configuration Variables
+
+All demo content is defined in `roles/aap_selfservice_custom/defaults/main.yml`:
+
+```yaml
+# Demo users with workshop password
+aap_selfservice_custom_user_password: "{{ common_password }}"
+aap_selfservice_custom_users:
+  - username: clouduser1
+    password: "{{ aap_selfservice_custom_user_password }}"
+    ...
+
+# Placeholder credentials for CNV environments
+aap_selfservice_custom_credentials:
+  - name: AWS Credentials
+    credential_type: Amazon Web Services
+    inputs:
+      username: "blahblahblahAWSACCESSKEYID"
+      password: "blahblahlahAWSSECRETACCESSKEY"
+  ...
+```
+
+### Customization for Hicham
+
+**To modify demo content:**
+
+1. **Edit defaults/main.yml:**
+   ```yaml
+   # Add/remove users
+   aap_selfservice_custom_users:
+     - username: newuser1
+       password: "{{ aap_selfservice_custom_user_password }}"
+       email: newuser1@example.com
+       first_name: New
+       last_name: User1
+
+   # Add/modify job templates
+   aap_selfservice_custom_job_templates:
+     - name: My Custom Template
+       playbook: my_playbook.yml
+       inventory: RHEL Inventory
+       credentials:
+         - RHEL - SSH Credentials
+       labels:
+         - custom
+   ```
+
+2. **Or override in AgnosticV workshop config:**
+   ```yaml
+   # agd_v2/aap-multiinstance-workshop/common.yaml
+   aap_selfservice_custom_projects:
+     - name: Custom Project
+       scm_url: https://github.com/my-org/my-playbooks
+       scm_branch: main
+   ```
+
+3. **CNV Environment Notes:**
+   - Credentials use placeholder values (fake AWS/Azure keys)
+   - Job templates appear in UI but won't execute against real infrastructure
+   - Perfect for portal UI demonstrations
+
+### Troubleshooting
+
+**Role skipped - no AAP instances found:**
+- Check `ocp4_workload_aap_multiinstance` ran successfully
+- Verify `agnosticd_user_info` data was saved
+
+**Connection errors to AAP:**
+- Ensure using gateway route (not controller route)
+- Verify `/api/gateway/v1/` is accessible
+- Check admin credentials are correct
+
+**Job template creation fails:**
+- Wait for project SCM sync (role includes 30s pause)
+- Verify playbook names exist in SCM repository
+- Check inventory and credential names match exactly
+
+**Loop variable warnings:**
+- Should be resolved with `loop_var: aap_instance`
+- If reoccurs, check for nested `include_tasks` with loops
