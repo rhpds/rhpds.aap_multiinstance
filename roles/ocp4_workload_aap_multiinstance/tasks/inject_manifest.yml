@@ -26,7 +26,7 @@
   ansible.builtin.uri:
     url: "{{ manifest_controller_url }}/api/v2/ping/"
     method: GET
-    validate_certs: true
+    validate_certs: false
     status_code: 200
   register: r_controller_ping
   until: r_controller_ping.status == 200
@@ -39,7 +39,7 @@
     controller_host: "{{ _manifest_controller_hostname }}"
     controller_username: "{{ aap_instance_admin_username }}"
     controller_password: "{{ manifest_admin_password }}"
-    validate_certs: true
+    validate_certs: false
   register: r_aap_license
   until: not r_aap_license.failed
   retries: 5
