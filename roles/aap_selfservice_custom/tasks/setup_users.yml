@@ -7,8 +7,8 @@
     msg: "Creating {{ aap_selfservice_custom_users | length }} demo users..."
   when: aap_selfservice_custom_debug | bool
 
-- name: Create AAP users
-  ansible.controller.user:
+- name: Create AAP users #at the aap platform level
+  ansible.platform.user:
     username: "{{ item.username }}"
     password: "{{ item.password }}"
     email: "{{ item.email }}"
