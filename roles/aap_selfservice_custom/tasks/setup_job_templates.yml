@@ -15,7 +15,7 @@
     organization: "{{ item.organization | default(aap_selfservice_custom_organization) }}"
     inventory: "{{ item.inventory }}"
     project: "{{ item.project }}"
-    playbook: "{{ item.playbook }}"
+    playbook: "playbooks/{{ item.playbook }}"
     credentials: "{{ item.credentials | default([]) }}"
     labels: "{{ item.labels | default([]) }}"
     ask_inventory_on_launch: "{{ item.ask_inventory_on_launch | default(false) }}"
