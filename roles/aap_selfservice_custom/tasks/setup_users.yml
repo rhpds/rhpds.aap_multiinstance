@@ -18,7 +18,7 @@
     aap_hostname: "{{ aap_selfservice_custom_controller_url }}"
     aap_username: "{{ aap_selfservice_custom_admin_username }}"
     aap_password: "{{ aap_selfservice_custom_admin_password }}"
-    aapvalidate_certs: "{{ aap_selfservice_custom_verify_ssl }}"
+    aap_validate_certs: "{{ aap_selfservice_custom_verify_ssl }}"
   loop: "{{ aap_selfservice_custom_users }}"
   loop_control:
     label: "{{ item.username }}"
