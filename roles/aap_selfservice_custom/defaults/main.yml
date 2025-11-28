@@ -131,7 +131,7 @@ aap_selfservice_custom_labels:
 aap_selfservice_custom_job_templates:
   # AWS Job Templates
   - name: Cloud/AWS AWS Provisioning Workflow
-    description: AWS provisioning workflow template
+    description: NEW AWS provisioning workflow
     job_type: run
     organization: Default
     inventory: AWS Inventory
@@ -145,6 +145,7 @@ aap_selfservice_custom_job_templates:
     ask_credential_on_launch: true
 
   - name: Cloud/AWS Create RHEL10 instance
+    description: Run a job template to create a RHEL 10 instance and provide some details
     job_type: run
     organization: Default
     inventory: AWS Inventory
@@ -157,6 +158,7 @@ aap_selfservice_custom_job_templates:
       - rhel
 
   - name: Cloud/AWS Create RHEL9 instance
+    description: Run a job template to create a RHEL 9 instance and provide some details
     job_type: run
     organization: Default
     inventory: AWS Inventory
@@ -169,6 +171,7 @@ aap_selfservice_custom_job_templates:
       - rhel
 
   - name: Cloud/AWS Create VCP
+    description: Run a job template to create an AWS VPC, and all its required networking
     job_type: run
     organization: Default
     inventory: AWS Inventory
@@ -180,6 +183,7 @@ aap_selfservice_custom_job_templates:
       - aws
 
   - name: Cloud/AWS Snapshot ec2 instance
+    description: Run a job template to capture a snapshot of an AWS ec2 instance
     job_type: run
     organization: Default
     inventory: AWS Inventory
@@ -192,6 +196,7 @@ aap_selfservice_custom_job_templates:
 
   # Network Job Templates
   - name: Network/Backup Network Device
+    description: Run a job template to BACKUP a network device
     job_type: run
     organization: Default
     inventory: Network Inventory
@@ -203,6 +208,7 @@ aap_selfservice_custom_job_templates:
       - network
 
   - name: Network/Deploy Network device configuration
+    description: Run a job template to APPLY a configuration or UPDATE a configuration on a network device
     job_type: run
     organization: Default
     inventory: Network Inventory
@@ -214,6 +220,7 @@ aap_selfservice_custom_job_templates:
       - network
 
   - name: Network/Onboard Network device
+    description: Run a job template to ONBOARD a network device
     job_type: run
     organization: Default
     inventory: Network Inventory
@@ -225,6 +232,7 @@ aap_selfservice_custom_job_templates:
       - network
 
   - name: Network/Restore Network device
+    description: Run a job template to RESTORE a network device to a previous configuration
     job_type: run
     organization: Default
     inventory: Network Inventory
@@ -237,6 +245,7 @@ aap_selfservice_custom_job_templates:
 
   # RHEL Job Templates
   - name: Linux/RHEL Deploy Applications to RHEL
+    description: Run a job template to DEPLOY application(s) to RHEL server(s)
     job_type: run
     organization: Default
     inventory: RHEL Inventory
@@ -248,6 +257,7 @@ aap_selfservice_custom_job_templates:
       - rhel
 
   - name: Linux/RHEL Install NGINX on RHEL
+    description: Run a job template to INSTALL NGINX on RHEL server
     job_type: run
     organization: Default
     inventory: RHEL Inventory
@@ -259,6 +269,7 @@ aap_selfservice_custom_job_templates:
       - rhel
 
   - name: Linux/RHEL Patch RHEL Servers
+    description: Run a job template to PATCH RHEL servers
     job_type: run
     organization: Default
     inventory: RHEL Inventory
@@ -270,6 +281,7 @@ aap_selfservice_custom_job_templates:
       - rhel
 
   - name: Linux/RHEL START Service on RHEL
+    description: Run a job template to START a Linux service that you provide on RHEL
     job_type: run
     organization: Default
     inventory: RHEL Inventory
@@ -281,6 +293,7 @@ aap_selfservice_custom_job_templates:
       - rhel
 
   - name: Linux/RHEL STOP Service on RHEL
+    description: Run a job template to STOP a Linux service that you provide on RHEL
     job_type: run
     organization: Default
     inventory: RHEL Inventory
