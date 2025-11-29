@@ -156,6 +156,8 @@ aap_selfservice_custom_job_templates:
     labels:
       - aws
       - rhel
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Cloud/AWS Create RHEL9 instance
     description: Run a job template to create a RHEL 9 instance and provide some details
@@ -169,6 +171,8 @@ aap_selfservice_custom_job_templates:
     labels:
       - aws
       - rhel
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Cloud/AWS Create VCP
     description: Run a job template to create an AWS VPC, and all its required networking
@@ -181,6 +185,8 @@ aap_selfservice_custom_job_templates:
       - AWS Credentials
     labels:
       - aws
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Cloud/AWS Snapshot ec2 instance
     description: Run a job template to capture a snapshot of an AWS ec2 instance
@@ -193,6 +199,8 @@ aap_selfservice_custom_job_templates:
       - AWS Credentials
     labels:
       - aws
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   # Network Job Templates
   - name: Network/Backup Network Device
@@ -206,6 +214,8 @@ aap_selfservice_custom_job_templates:
       - Network Credentials
     labels:
       - network
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Network/Deploy Network device configuration
     description: Run a job template to APPLY a configuration or UPDATE a configuration on a network device
@@ -218,6 +228,8 @@ aap_selfservice_custom_job_templates:
       - Network Credentials
     labels:
       - network
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Network/Onboard Network device
     description: Run a job template to ONBOARD a network device
@@ -230,6 +242,8 @@ aap_selfservice_custom_job_templates:
       - Network Credentials
     labels:
       - network
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Network/Restore Network device
     description: Run a job template to RESTORE a network device to a previous configuration
@@ -242,6 +256,8 @@ aap_selfservice_custom_job_templates:
       - Network Credentials
     labels:
       - network
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   # RHEL Job Templates
   - name: Linux/RHEL Deploy Applications to RHEL
@@ -255,6 +271,8 @@ aap_selfservice_custom_job_templates:
       - RHEL - SSH Credentials
     labels:
       - rhel
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Linux/RHEL Install NGINX on RHEL
     description: Run a job template to INSTALL NGINX on RHEL server
@@ -267,6 +285,8 @@ aap_selfservice_custom_job_templates:
       - RHEL - SSH Credentials
     labels:
       - rhel
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Linux/RHEL Patch RHEL Servers
     description: Run a job template to PATCH RHEL servers
@@ -279,6 +299,8 @@ aap_selfservice_custom_job_templates:
       - RHEL - SSH Credentials
     labels:
       - rhel
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Linux/RHEL START Service on RHEL
     description: Run a job template to START a Linux service that you provide on RHEL
@@ -291,6 +313,8 @@ aap_selfservice_custom_job_templates:
       - RHEL - SSH Credentials
     labels:
       - rhel
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: Linux/RHEL STOP Service on RHEL
     description: Run a job template to STOP a Linux service that you provide on RHEL
@@ -303,6 +327,8 @@ aap_selfservice_custom_job_templates:
       - RHEL - SSH Credentials
     labels:
       - rhel
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
 
   - name: RHEL / Update RHEL Time Servers
     description: The Imported CUSTOM template in Self-Service portal will point to this job template
@@ -316,7 +342,9 @@ aap_selfservice_custom_job_templates:
     labels:
       - rhel
       - custom
-
+    ask_inventory_on_launch: true
+    ask_credential_on_launch: true
+    
 # -------------------------------------------------------------------
 # Behavior Settings
 # -------------------------------------------------------------------
